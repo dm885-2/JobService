@@ -1,4 +1,6 @@
 import {host, query, subscriber} from "./helpers.js";
+import SolverManager from "./Solver.js";
+const manager = new SolverManager();
 
 export async function addJob(msg, publish){
 }
@@ -20,9 +22,24 @@ export async function jobHistory(msg, publish){
     });
 }
 
+export async function solverHealth(msg, publish){
+    let solver = manager.getSolver(msg.solverID);
+    if(!solver)
+    {
+        solver = manager.newSolver(msg.solverID, msg.busy);
+    }
+    
+    solver.healthUpdate();
+}
+
 if(process.env.RAPID)
 {
-    subscriber(host, [{river: "jobs", event: "add-job", work: addJob}]); // Adds a new job
-    subscriber(host, [{river: "jobs", event: "queue-check", work: queueCheck}]); // Runs the next job in the queue, if there is any
-    subscriber(host, [{river: "jobs", event: "job-history", work: jobHistory}]); // Gets the job history of a user
+    subscriber(host, [
+        {river: "jobs", event: "add-job", work: addJob}, // Adds a new job
+        {river: "jobs", event: "queue-check", work: queueCheck}, // Runs the next job in the queue, if there is any
+        {river: "jobs", event: "job-history", work: jobHistory}, // Gets the job history of a user
+
+        // Solver manager stuff
+        {river: "jobs", event: "solver-pong-response", work: solverHealth}, // Gets the job history of a user
+    ]);
 }

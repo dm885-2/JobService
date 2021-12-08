@@ -14,8 +14,41 @@ export async function queueCheck(msg, publish){
         const solvers = manager.getIdleSolvers(Number(job.solverLimit)); 
         if(solvers)
         {
+            await query("UPDATE `jobs` SET `status` = '1' WHERE `id` = ?", [
+                job.id,
+            ]);
             console.log("Send jobs to theese solvers", solvers);
+            solvers.forEach(solver => {
+                solver.busy = true;
+                solver.jobID = job.id;
+
+                publish("solve", {
+                    solverID: solver.id,
+                    problemID: job.id,
+                    data: "",
+                    model: "",
+                    solver: false,
+                    flagS: false,
+                    flagF: false,
+                });
+            });
         }
+    }
+}
+
+export async function jobFinished(msg, publish){
+    let solver = manager.getSolver(msg.solverID);
+    if(solver)
+    {
+        solver.busy = false;
+    }
+    
+    const solvers = getBusySolvers(msg.problemID);
+    if(solvers.length === 0)
+    {
+        await query("UPDATE `jobs` SET `status` = '2' WHERE `id` = ?", [
+            job.id,
+        ]);
     }
 }
 
@@ -46,7 +79,8 @@ if(process.env.RAPID)
         {river: "jobs", event: "add-job", work: addJob}, // Adds a new job
         {river: "jobs", event: "queue-check", work: queueCheck}, // Runs the next job in the queue, if there is any
         {river: "jobs", event: "job-history", work: jobHistory}, // Gets the job history of a user
-
+        {river: "jobs", event: "solver-response", work: jobFinished}, // A solver has answered
+        
         // Solver manager stuff
         {river: "jobs", event: "solver-pong-response", work: solverHealth}, // Response of a solver health check
     ]);

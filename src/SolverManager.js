@@ -3,17 +3,19 @@ import rapid from "@ovcina/rapidriver";
 import {host} from "./helpers.js";
 
 class Solver {
-    id;
+    id = -1;
+    jobID = -1;
     #isBusy = false;
 
     #healthy = true;
-    #lastHealthCheck = Date.now();
+    #lastMessage = Date.now();
 
     set busy(val)
     {
         if(typeof val === "boolean")
         {
             this.#isBusy = val;
+            this.jobID = -1;
         }
     }
 
@@ -30,6 +32,7 @@ class Solver {
     healthUpdate()
     {
         this.#healthy = true;
+        this.#lastMessage = Date.now();
     }
 
     /**
@@ -41,11 +44,10 @@ class Solver {
         if(this.#healthy)
         {
             this.#healthy = false;
-            this.#lastHealthCheck = Date.now();
             rapid.publish(host, "solver-ping", {
                 solverID: this.id, 
             });
-        }else if((Date.now() - this.#lastHealthCheck) >= (1000 * 60 * 60)) // Hasent responded to health checks for atleast an hour
+        }else if((Date.now() - this.#lastMessage) >= (1000 * 60 * 60)) // Hasent responded to health checks for atleast an hour
         {
             return false;
         }
@@ -113,6 +115,7 @@ export default class SolverManager {
             if(!health)
             {
                 this.removeSolver(solver.id);
+                // TODO: Perform jobFinished check
             }
         });
     }
@@ -132,5 +135,15 @@ export default class SolverManager {
             return solvers;
         }
         return false;
+    }
+
+    /**
+     * Returns the given amount of busy solvers working on the given job.
+     * @param number jobID 
+     * @returns Solver[]
+     */
+    getBusySolvers(jobID)
+    {
+        return this.#solvers.filter(solver => solver.jobID === jobID);
     }
 }

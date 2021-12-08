@@ -69,7 +69,7 @@ export default class SolverManager {
      */
     discover()
     {
-        rapid.publish("solver-ping", {});
+        rapid.publish(host, "solver-ping", {});
     }
 
     /**

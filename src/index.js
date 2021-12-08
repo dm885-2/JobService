@@ -8,7 +8,7 @@ export async function addJob(msg, publish){
 export async function queueCheck(msg, publish){
     
     const queue = await query("SELECT *, (SELECT `solverLimit` FROM `users` WHERE users.id = jobs.user LIMIT 1) as `solverLimit` FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
-    if(queue)
+    if(queue && queue.length > 0)
     {
         const job = queue[0];
         const solvers = manager.getIdleSolvers(Number(job.solverLimit)); 
@@ -33,6 +33,8 @@ export async function solverHealth(msg, publish){
     if(!solver)
     {
         solver = manager.newSolver(msg.solverID, msg.busy);
+    }else{
+        solver.busy = msg.busy;
     }
     
     solver.healthUpdate();

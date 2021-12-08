@@ -1,13 +1,23 @@
-import {host, query, subscriber} from "./helpers.js";
+import {host, query, subscriber, getTokenData} from "./helpers.js";
 import SolverManager from "./SolverManager.js";
 const manager = new SolverManager();
 
 export async function addJob(msg, publish){
+    const tokenData = getTokenData(msg.token);
+    const stmt = await query("INSERT INTO `jobs` (`userID`, `modelID`, `dataID`) VALUES (?, ?, ?)", [
+        tokenData.id,
+        msg.modelID,
+        msg.dataID,
+    ]);
+
+    publish("add-job-response", {
+        error: !!stmt,
+    });
 }
 
 export async function queueCheck(msg, publish){
     
-    const queue = await query("SELECT *, (SELECT `solverLimit` FROM `users` WHERE users.id = jobs.user LIMIT 1) as `solverLimit` FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
+    const queue = await query("SELECT *, (SELECT `solverLimit` FROM `users` WHERE users.id = jobs.user LIMIT 1) as `solverLimit`, (SELECT `data` FROM `files` WHERE files.id = jobs.modelID LIMIT 1) as `modelContent` , (SELECT `data` FROM `files` WHERE files.id = jobs.dataID LIMIT 1) as `dataContent` FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
     if(queue && queue.length > 0)
     {
         const job = queue[0];
@@ -25,8 +35,8 @@ export async function queueCheck(msg, publish){
                 publish("solve", {
                     solverID: solver.id,
                     problemID: job.id,
-                    data: "",
-                    model: "",
+                    data: solver.dataContent,
+                    model: solver.modelContent,
                     solver: false,
                     flagS: false,
                     flagF: false,
@@ -42,7 +52,7 @@ export async function jobFinished(msg, publish){
     {
         solver.busy = false;
     }
-    
+
     const solvers = getBusySolvers(msg.problemID);
     if(solvers.length === 0)
     {

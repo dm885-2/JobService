@@ -58,6 +58,16 @@ if(process.env.mysqlDb)
         database : process.env.mysqlDb ?? 'db',
     });
     connection.connect();
+    query("CREATE TABLE IF NOT EXISTS `jobs` (" +
+    "`id` int(11) unsigned NOT NULL AUTO_INCREMENT," +
+    "`userID` int(11) unsigned NOT NULL DEFAULT '0'," +
+    "`modelID` int(11) unsigned NOT NULL DEFAULT '0'," +
+    "`dataID` int(11) unsigned NOT NULL DEFAULT '0'," +
+    "`status` int(11) unsigned NOT NULL DEFAULT '0'," +
+    "KEY `Index 1` (`id`)," +
+    "KEY `FK__users` (`userID`)," +
+    "CONSTRAINT `FK__users` FOREIGN KEY (`userID`) REFERENCES `users` (`id`)" +
+    ") ENGINE=InnoDB DEFAULT CHARSET=latin1;");
 }
 
 /**

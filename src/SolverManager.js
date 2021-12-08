@@ -115,7 +115,13 @@ export default class SolverManager {
             if(!health)
             {
                 this.removeSolver(solver.id);
-                // TODO: Perform jobFinished check
+                if(solver.jobID !== -1)
+                {
+                    rapid.publish(host, "solver-response", {
+                        solverID: solver.id,
+                        problemID: solver.jobID,
+                    });
+                }
             }
         });
     }

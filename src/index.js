@@ -1,15 +1,21 @@
 import {host, query, subscriber} from "./helpers.js";
-import SolverManager from "./Solver.js";
+import SolverManager from "./SolverManager.js";
 const manager = new SolverManager();
 
 export async function addJob(msg, publish){
 }
 
 export async function queueCheck(msg, publish){
-    const queue = await query("SELECT * FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
+    
+    const queue = await query("SELECT *, (SELECT `solverLimit` FROM `users` WHERE users.id = jobs.user LIMIT 1) as `solverLimit` FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
     if(queue)
     {
-
+        const job = queue[0];
+        const solvers = manager.getIdleSolvers(Number(job.solverLimit)); 
+        if(solvers)
+        {
+            console.log("Send jobs to theese solvers", solvers);
+        }
     }
 }
 
@@ -40,6 +46,6 @@ if(process.env.RAPID)
         {river: "jobs", event: "job-history", work: jobHistory}, // Gets the job history of a user
 
         // Solver manager stuff
-        {river: "jobs", event: "solver-pong-response", work: solverHealth}, // Gets the job history of a user
+        {river: "jobs", event: "solver-pong-response", work: solverHealth}, // Response of a solver health check
     ]);
 }

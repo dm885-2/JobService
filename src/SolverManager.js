@@ -78,10 +78,14 @@ export default class SolverManager {
      * @param boolean busy 
      * @returns Solver
      */
-    newSolver(id, busy)
+    newSolver(id, problemID)
     {
         const temp = new Solver();
         this.#solvers.push(temp);
+
+        temp.id = id;
+        temp.jobID = problemID;
+        temp.busy = problemID !== -1;
 
         return temp;
     }

@@ -75,12 +75,13 @@ export async function solverHealth(msg, publish){
     let solver = manager.getSolver(msg.solverID);
     if(!solver)
     {
-        solver = manager.newSolver(msg.solverID, msg.busy);
+        solver = manager.newSolver(msg.solverID, msg.problemID);
     }else{
         solver.busy = msg.busy;
     }
     
     solver.healthUpdate();
+    console.log("SOlver health", msg, solver, solver.busy);
 }
 
 if(process.env.RAPID)

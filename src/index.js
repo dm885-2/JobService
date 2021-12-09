@@ -17,7 +17,12 @@ export async function addJob(msg, publish){
 
 export async function queueCheck(msg, publish){
     
-    const queue = await query("SELECT *, (SELECT `solverLimit` FROM `users` WHERE users.id = jobs.user LIMIT 1) as `solverLimit`, (SELECT `data` FROM `files` WHERE files.id = jobs.modelID LIMIT 1) as `modelContent` , (SELECT `data` FROM `files` WHERE files.id = jobs.dataID LIMIT 1) as `dataContent` FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
+    const queue = await query("SELECT *, " +
+        "(SELECT `solverLimit` FROM `users` WHERE users.id = jobs.user LIMIT 1) as `solverLimit`, " + 
+        "(SELECT `data` FROM `files` WHERE files.id = jobs.modelID LIMIT 1) as `modelContent`, " + 
+        "(SELECT `data` FROM `files` WHERE files.id = jobs.dataID LIMIT 1) as `dataContent` " + 
+    "FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
+
     if(queue && queue.length > 0)
     {
         const job = queue[0];
@@ -81,7 +86,6 @@ export async function solverHealth(msg, publish){
     }
     
     solver.healthUpdate();
-    console.log("SOlver health", msg, solver, solver.busy);
 }
 
 if(process.env.RAPID)

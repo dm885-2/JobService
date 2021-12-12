@@ -58,9 +58,6 @@ export async function queueCheck(msg, publish){
             ]);
             console.log("Send jobs to theese solvers", solvers);
             solvers.forEach(async (solver, i) => {
-                solver.busy = true;
-                solver.jobID = job.id;
-
                 const target = jobSolvers[i];
                 const [dataContent, modelContent] = await Promise.all([
                     publishAndWait("read-file", "read-file-response", 0, {
@@ -71,13 +68,16 @@ export async function queueCheck(msg, publish){
                     }, -1),
                 ]);
                 
-                if(dataContent && modelContent)
+                if(!dataContent.error && !modelContent.error)
                 {
+                    solver.busy = true;
+                    solver.jobID = job.id;
+
                     publish("solve", {
                         solverID: solver.id,
                         problemID: job.id,
-                        data: dataContent,
-                        model: modelContent,
+                        data: dataContent.data,
+                        model: modelContent.data,
                         solver: false,
                         flagS: false,
                         flagF: false,

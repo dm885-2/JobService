@@ -1,61 +1,75 @@
-import {host, query, subscriber, getTokenData} from "./helpers.js";
+import {host, query, subscriber, publishAndWait} from "./helpers.js";
 import SolverManager from "./SolverManager.js";
 const manager = new SolverManager();
 
-/*
-{
-    modelID: fileID,
-    dataID: fileID,
-    userID: number,
-}
-
-*/
 export async function addJob(msg, publish){
-    const tokenData = getTokenData(msg.token);
-
     const stmt = await query("INSERT INTO `jobs` (`userID`, `modelID`, `dataID`) VALUES (?, ?, ?)", [
-        tokenData.id,
+        msg.userID,
         msg.modelID,
         msg.dataID,
     ]);
 
     publish("add-job-response", {
-        error: !!stmt
+        error: !!stmt,
     });
+    publish("queue-check", {});
 }
 
 export async function queueCheck(msg, publish){
     
     const queue = await query("SELECT *, " +
         "(SELECT `solverLimit` FROM `users` WHERE users.id = jobs.user LIMIT 1) as `solverLimit`, " + 
-        "(SELECT `data` FROM `files` WHERE files.id = jobs.modelID LIMIT 1) as `modelContent`, " + 
-        "(SELECT `data` FROM `files` WHERE files.id = jobs.dataID LIMIT 1) as `dataContent` " + 
+        // "(SELECT `data` FROM `files` WHERE files.id = jobs.modelID LIMIT 1) as `modelContent`, " + 
+        // "(SELECT `data` FROM `files` WHERE files.id = jobs.dataID LIMIT 1) as `dataContent` " + 
     "FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
 
     if(queue && queue.length > 0)
     {
         const job = queue[0];
-        const solvers = manager.getIdleSolvers(Number(job.solverLimit)); 
-        if(solvers)
+
+        const jobSolvers = await query("SELECT * FROM `jobFiles` WHERE `jobID` = ? ORDER BY `id` DESC", [
+            job.id,
+        ]);
+        const neededResources = Math.min(Number(job.solverLimit), (jobSolvers || []).length);
+        const solvers = manager.getIdleSolvers(neededResources); 
+        if(solvers && neededResources > 0)
         {
             await query("UPDATE `jobs` SET `status` = '1' WHERE `id` = ?", [
                 job.id,
             ]);
             console.log("Send jobs to theese solvers", solvers);
-            solvers.forEach(solver => {
+            solvers.forEach((solver, i) => {
                 solver.busy = true;
                 solver.jobID = job.id;
 
-                publish("solve", {
-                    solverID: solver.id,
-                    problemID: job.id,
-                    data: solver.dataContent,
-                    model: solver.modelContent,
-                    solver: false,
-                    flagS: false,
-                    flagF: false,
-                });
+                const target = jobSolvers[i];
+                const [dataContent, modelContent] = await Promise.all([
+                    publishAndWait("read-file", "read-file-response", 0, {
+                        fileId: target.dataID,
+                    }, -1),
+                    publishAndWait("read-file", "read-file-response", 0, {
+                        fileId: target.modelID,
+                    }, -1),
+                ]);
+                
+                if(dataContent && modelContent)
+                {
+                    publish("solve", {
+                        solverID: solver.id,
+                        problemID: job.id,
+                        data: dataContent,
+                        model: modelContent,
+                        solver: false,
+                        flagS: false,
+                        flagF: false,
+                    });
+                }
             });
+        }else if(neededResources === 0)
+        {
+            await query("UPDATE `jobs` SET `status` = '2' WHERE `id` = ?", [
+                job.id,
+            ]);
         }
     }
 }
@@ -73,6 +87,7 @@ export async function jobFinished(msg, publish){
         await query("UPDATE `jobs` SET `status` = '2' WHERE `id` = ?", [
             job.id,
         ]);
+        publish("queue-check", {});
     }
 }
 

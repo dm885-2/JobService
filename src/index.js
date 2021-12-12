@@ -2,8 +2,17 @@ import {host, query, subscriber, getTokenData} from "./helpers.js";
 import SolverManager from "./SolverManager.js";
 const manager = new SolverManager();
 
+/*
+{
+    modelID: fileID,
+    dataID: fileID,
+    userID: number,
+}
+
+*/
 export async function addJob(msg, publish){
     const tokenData = getTokenData(msg.token);
+
     const stmt = await query("INSERT INTO `jobs` (`userID`, `modelID`, `dataID`) VALUES (?, ?, ?)", [
         tokenData.id,
         msg.modelID,
@@ -11,7 +20,7 @@ export async function addJob(msg, publish){
     ]);
 
     publish("add-job-response", {
-        error: !!stmt,
+        error: !!stmt
     });
 }
 

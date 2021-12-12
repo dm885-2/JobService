@@ -2,12 +2,31 @@ import {host, query, subscriber, publishAndWait} from "./helpers.js";
 import SolverManager from "./SolverManager.js";
 const manager = new SolverManager();
 
+/*
+{
+    userID: number,
+    solvers: [{
+        modelID: number,
+        dataID: number,
+        // solver: "",
+    }]
+}
+*/
 export async function addJob(msg, publish){
-    const stmt = await query("INSERT INTO `jobs` (`userID`, `modelID`, `dataID`) VALUES (?, ?, ?)", [
-        msg.userID,
-        msg.modelID,
-        msg.dataID,
-    ]);
+    const stmt = await query("INSERT INTO `jobs` (`userID`) VALUES (?)", [msg.userID]);
+    const jobID = stmt?.insertId;
+    if(jobID)
+    {
+        for(let i = 0; i < msg.solvers.length; i++)
+        {
+            const solver = msg.solvers[i];
+            await query("INSERT INTO `jobFiles` (`modelID`, `dataID`, `jobID`) VALUES (?, ?, ?)", [
+                solver.modelID,
+                solver.dataID,
+                jobID,
+            ]);
+        }
+    }
 
     publish("add-job-response", {
         error: !!stmt,
@@ -38,7 +57,7 @@ export async function queueCheck(msg, publish){
                 job.id,
             ]);
             console.log("Send jobs to theese solvers", solvers);
-            solvers.forEach((solver, i) => {
+            solvers.forEach(async (solver, i) => {
                 solver.busy = true;
                 solver.jobID = job.id;
 

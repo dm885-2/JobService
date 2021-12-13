@@ -1,4 +1,4 @@
-import {ping} from "./index.js";
+// import {ping} from "./index.js";
 
 // test('ping responds with pong', () => {
 //     ping({token: "",}, (channel, message) => {

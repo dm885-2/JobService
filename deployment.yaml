@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: <service-name>                # CHANGE THIS TO YOUR SERVICE NAME
+  name: jobservice                # CHANGE THIS TO YOUR SERVICE NAME
   labels:
-    app: <service-name>               # CHANGE THIS TO YOUR SERVICE NAME
+    app: jobservice               # CHANGE THIS TO YOUR SERVICE NAME
 spec:
   selector:
     matchLabels:
-      app: <service-name>             # CHANGE THIS TO YOUR SERVICE NAME
+      app: jobservice             # CHANGE THIS TO YOUR SERVICE NAME
   replicas: 1
   template:
     metadata:
       labels:
-        app: <service-name>           # CHANGE THIS TO YOUR SERVICE NAME
+        app: jobservice           # CHANGE THIS TO YOUR SERVICE NAME
     spec:
       containers:
-      - name: <service-name>          # CHANGE THIS TO YOUR SERVICE NAME
-        image: dm885/<image>          # CHANGE THIS TO YOUR DOCKER IMAGE
+      - name: jobservice          # CHANGE THIS TO YOUR SERVICE NAME
+        image: dm885/jobservice          # CHANGE THIS TO YOUR DOCKER IMAGE
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
@@ -50,13 +50,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: <service-name>              # CHANGE THIS TO YOUR SERVICE NAME
+  name: jobservice              # CHANGE THIS TO YOUR SERVICE NAME
   labels:
-    app: <service-name>             # CHANGE THIS TO YOUR SERVICE NAME
+    app: jobservice             # CHANGE THIS TO YOUR SERVICE NAME
 spec:
   type: ClusterIP
   selector:
-    app: <service-name>             # CHANGE THIS TO YOUR SERVICE NAME
+    app: jobservice             # CHANGE THIS TO YOUR SERVICE NAME
   ports:
     - protocol: TCP
       name: http

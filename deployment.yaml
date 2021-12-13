@@ -25,14 +25,14 @@ spec:
           value: "mysql.default.svc.cluster.local"
         - name: mysqlUser
           value: "root"
-        - name: mysql
+        - name: mysqlPass
           valueFrom:
             secretKeyRef:
               name: mysql-secrets
               key: mysql-root-password
-        - name: mysqlDb:
+        - name: mysqlDb
           value: "db"
-        - name: rabbitUrl
+        - name: rabbitHost
           value: "rabbitmq-0.rabbitmq.rabbits.svc.cluster.local"
         - name: rabbitPort
           value: "5672"

@@ -66,7 +66,7 @@ if(process.env.mysqlDb)
     });
     connection.connect();
 
-    query("CREATE TABLE IF NOT EXISTS `jobFiles` (" +
+    const res1 = await query("CREATE TABLE IF NOT EXISTS `jobFiles` (" +
     "`id` int(10) unsigned NOT NULL AUTO_INCREMENT," +
     "`dataID` int(10) unsigned NOT NULL DEFAULT '0'," +
     "`modelID` int(10) unsigned NOT NULL DEFAULT '0'," +
@@ -76,7 +76,7 @@ if(process.env.mysqlDb)
     "CONSTRAINT `FK_jobFiles_jobs` FOREIGN KEY (`jobID`) REFERENCES `jobs` (`id`)" +
     " ) ENGINE=InnoDB DEFAULT CHARSET=latin1;");
 
-    query("CREATE TABLE IF NOT EXISTS `jobs` (" +
+    const res2 = await query("CREATE TABLE IF NOT EXISTS `jobs` (" +
     "`id` int(11) unsigned NOT NULL AUTO_INCREMENT," +
     "`userID` int(11) unsigned NOT NULL DEFAULT '0'," +
     "`status` int(11) unsigned NOT NULL DEFAULT '0'," +
@@ -84,8 +84,8 @@ if(process.env.mysqlDb)
     "KEY `FK__users` (`userID`)," +
     "CONSTRAINT `FK__users` FOREIGN KEY (`userID`) REFERENCES `users` (`id`)" +
     "  ) ENGINE=InnoDB DEFAULT CHARSET=latin1;");
-      
-      
+    
+    if(!res1 || !res2) process.exit(1);
 }
 
 /**

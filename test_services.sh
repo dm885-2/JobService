@@ -13,7 +13,7 @@ kubectl -n rabbits apply -f https://raw.githubusercontent.com/DM885/GatewayServi
 # kubectl -n rabbits apply -f https://raw.githubusercontent.com/DM885/SolverInfoService/main/deployment.yaml
 
 # AUTH SERVICE
-# kubectl -n rabbits apply -f https://raw.githubusercontent.com/DM885/AuthenticationService/main/deployment.yaml
+kubectl -n rabbits apply -f https://raw.githubusercontent.com/DM885/AuthenticationService/main/deployment.yaml
 
 # LOGGING SERVICE
 # kubectl -n rabbits apply -f https://raw.githubusercontent.com/DM885/LoggingService/main/deployment.yaml

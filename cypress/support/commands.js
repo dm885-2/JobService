@@ -22,3 +22,56 @@
 //
 //
 // -- This will overwrite an existing command --
+Cypress.Commands.add('loginAsUser', () => {
+    cy.request({
+        method:'POST', 
+        url:'/auth/login',
+        body: {
+          username: "user",
+          password: "user_supersecure"
+        }
+      })
+      .as('loginResponse')
+      .then((response) => {
+        Cypress.env('rtoken', response.body.refreshToken); 
+        return response;
+      })
+      .its('status')
+      .should('eq', 200);
+})
+
+Cypress.Commands.add('loginAsAdmin', () => {
+  cy.request({
+      method:'POST', 
+      url:'/auth/login',
+      body: {
+        username: "admin",
+        password: "admin_supersecure"
+      }
+    })
+    .as('loginResponse')
+    .then((response) => {
+      Cypress.env('rtoken', response.body.refreshToken); 
+      return response;
+    })
+    .its('status')
+    .should('eq', 200);
+})
+
+Cypress.Commands.add('getAT', () => {
+  const token = Cypress.env('rtoken');
+  cy.request({
+      method:'POST', 
+      url:'/auth/accessToken',
+      body: {
+        refreshToken : token
+      }
+    })
+    .as('loginResponse')
+    .then((response) => {
+      Cypress.env('token', response.body.accessToken);
+      return response;
+    })
+    .its('status')
+    .should('eq', 200);
+})

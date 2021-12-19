@@ -13,35 +13,37 @@ const manager = new SolverManager();
 }
 */
 export async function addJob(msg, publish){
-    const stmt = await query("INSERT INTO `jobs` (`userID`) VALUES (?)", [msg.userID]);
+    const stmt = await query("INSERT INTO `jobs` (`userID`) VALUES (?)", [
+        msg.userID,
+    ]);
     const jobID = stmt?.insertId;
     if(jobID)
     {
         for(let i = 0; i < msg.solvers.length; i++)
         {
             const solver = msg.solvers[i];
-            await query("INSERT INTO `jobFiles` (`modelID`, `dataID`, `jobID`) VALUES (?, ?, ?)", [
-                solver.modelID,
-                solver.dataID,
+            console.log(await query("INSERT INTO `jobFiles` (`modelID`, `dataID`, `jobID`) VALUES (?, ?, ?)", [
+                msg.model,
+                msg.dataset,
                 jobID,
-            ]);
+            ]));
         }
     }
 
     publish("add-job-response", {
-        error: !!stmt,
+        error: !jobID,
     });
     publish("queue-check", {});
 }
 
 export async function queueCheck(msg, publish){
-    
     const queue = await query("SELECT *, " +
-        "(SELECT `solverLimit` FROM `users` WHERE users.id = jobs.user LIMIT 1) as `solverLimit`, " + 
-        // "(SELECT `data` FROM `files` WHERE files.id = jobs.modelID LIMIT 1) as `modelContent`, " + 
-        // "(SELECT `data` FROM `files` WHERE files.id = jobs.dataID LIMIT 1) as `dataContent` " + 
+    "(SELECT `solverLimit` FROM `users` WHERE users.id = jobs.userID LIMIT 1) as `solverLimit` " + 
+    // "(SELECT `data` FROM `files` WHERE files.id = jobs.modelID LIMIT 1) as `modelContent`, " + 
+    // "(SELECT `data` FROM `files` WHERE files.id = jobs.dataID LIMIT 1) as `dataContent` " + 
     "FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
-
+    console.log("Queue check", queue);
+    
     if(queue && queue.length > 0)
     {
         const job = queue[0];
@@ -51,6 +53,7 @@ export async function queueCheck(msg, publish){
         ]);
         const neededResources = Math.min(Number(job.solverLimit), (jobSolvers || []).length);
         const solvers = manager.getIdleSolvers(neededResources); 
+        console.log(solvers, jobSolvers, job);
         if(solvers && neededResources > 0)
         {
             await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
@@ -91,6 +94,7 @@ export async function queueCheck(msg, publish){
                 Date.now(),
                 job.id,
             ]);
+            publish("queue-check", {}); // Go to next element in queue
         }
     }
 }
@@ -119,7 +123,7 @@ export async function jobFinished(msg, publish){
 }
 
 export async function jobHistory(msg, publish){
-    const data = await query("SELECT * FROM `jobs` WHERE `user` = ? ORDER BY `id` DESC LIMIT 50", [
+    const data = await query("SELECT * FROM `jobs` WHERE `userID` = ? ORDER BY `id` DESC LIMIT 50", [
         msg.userID // Should be token userID?
     ]);
     publish("job-history-response", {
@@ -132,8 +136,10 @@ export async function solverHealth(msg, publish){
     if(!solver)
     {
         solver = manager.newSolver(msg.solverID, msg.problemID);
+        console.log("Discovered new solver #", msg.solverID, solver);
     }else{
-        solver.busy = msg.busy;
+        console.log("Solver alive", msg.solverID);
+        solver.busy = msg.problemID !== -1;
     }
     
     solver.healthUpdate();

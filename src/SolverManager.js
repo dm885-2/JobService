@@ -61,6 +61,7 @@ export default class SolverManager {
     constructor()
     {
         setTimeout(() => this.discover(), 5000);
+        setTimeout(() => this.queueCheck(), 7000);
         setInterval(() => this.healthCheck(), 1000 * 60 * 5); // Runs health check every 5 minute.
     }
 
@@ -70,6 +71,14 @@ export default class SolverManager {
     discover()
     {
         rapid.publish(host, "solver-ping", {});
+    }
+
+    /**
+     * Checks the queue for waiting stuff.
+     */
+    queueCheck()
+    {
+        rapid.publish(host, "queue-check", {});
     }
 
     /**
@@ -138,7 +147,7 @@ export default class SolverManager {
     getIdleSolvers(amount)
     {
         const solvers = this.#solvers
-                            .find(solver => !solver.busy)
+                            .filter(solver => !solver.busy)
                             .filter((_, i) => i < amount);
         if(solvers.length === amount)
         {

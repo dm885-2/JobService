@@ -36,13 +36,10 @@ export async function addJob(msg, publish){
     publish("queue-check", {});
 }
 
-export async function queueCheck(msg, publish){
+export async function queueCheck(_, publish){
     const queue = await query("SELECT * " +
-    // "(SELECT `solverLimit` FROM `users` WHERE users.id = jobs.userID LIMIT 1) as `solverLimit` " + 
-    // "(SELECT `data` FROM `files` WHERE files.id = jobs.modelID LIMIT 1) as `modelContent`, " + 
-    // "(SELECT `data` FROM `files` WHERE files.id = jobs.dataID LIMIT 1) as `dataContent` " +  
     "FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
-    console.log("Queue check", queue);
+    console.log("Queue check", queue.length, "in queue");
     
     if(queue && queue.length > 0)
     {
@@ -51,7 +48,6 @@ export async function queueCheck(msg, publish){
         const {data: userInfo} = await publishAndWait("getUser", "getUser-response", 0, {
             id: job.userID,
         }, -1);
-        console.log(userInfo);
         if(userInfo)
         {
             const jobSolvers = await query("SELECT * FROM `jobFiles` WHERE `jobID` = ? ORDER BY `id` DESC", [
@@ -59,14 +55,12 @@ export async function queueCheck(msg, publish){
             ]);
             const neededResources = Math.min(Number(userInfo.solverLimit), (jobSolvers || []).length);
             const solvers = manager.getIdleSolvers(neededResources); 
-            console.log(solvers, jobSolvers, job, neededResources, userInfo);
             if(solvers && neededResources > 0)
             {
                 await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
                     Date.now(),
                     job.id,
                 ]);
-                console.log("Send jobs to theese solvers", solvers);
                 solvers.forEach(async (solver, i) => {
                     const target = jobSolvers[i];
                     const [dataContent, modelContent] = await Promise.all([
@@ -77,10 +71,8 @@ export async function queueCheck(msg, publish){
                             fileId: target.modelID,
                         }, -1),
                     ]);
-                    console.log(dataContent, modelContent);
                     if(!dataContent.error && !modelContent.error)
                     {
-                        console.log("Seinding sovle event!");
                         solver.busy = true;
                         solver.jobID = job.id;
     
@@ -113,7 +105,6 @@ export async function jobFinished(msg, publish){
     {
         solver.busy = false;
     }
-    console.log("Got something", msg);
     await query("INSERT INTO `jobOutput` (`content`, `jobID`) VALUES (?, ?)", [
         JSON.stringify(msg.data), // TODO: Dont just stringify it
         msg.problemID

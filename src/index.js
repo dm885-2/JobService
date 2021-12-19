@@ -23,9 +23,10 @@ export async function addJob(msg, publish){
         for(let i = 0; i < msg.solvers.length; i++)
         {
             const solver = msg.solvers[i];
-            await query("INSERT INTO `jobParts` (`solverID`, `cpuLimit`, `memoryLimit`, `flagS`, `flagF`, `jobID`) VALUES (?, ?, ?, ?, ?, ?)", [
+            await query("INSERT INTO `jobParts` (`solverID`, `cpuLimit`, `timeLimit`, `memoryLimit`, `flagS`, `flagF`, `jobID`) VALUES (?, ?, ?, ?, ?, ?, ?)", [
                 solver.solverID,
                 solver.cpuLimit,
+                solver.timeLimit,
                 solver.memoryLimit,
                 solver.flagS,
                 solver.flagF,
@@ -76,6 +77,10 @@ export async function queueCheck(_, publish){
                         solver.busy = true;
                         solver.jobID = job.id;
     
+                        const memoryLimit = Number(job.memoryLimit);
+                        const timeLimit = Number(job.timeLimit);
+                        const cpuLimit = Number(job.cpuLimit);
+
                         publish("solve", {
                             solverID: solver.id,
                             problemID: job.id,
@@ -87,8 +92,9 @@ export async function queueCheck(_, publish){
                             flagS: Number(job.flagS),
                             flagF: Number(job.flagF),
 
-                            cpuLimit: job.cpuLimit,
-                            memoryLimit: job.memoryLimit + "m",
+                            cpuLimit: cpuLimit === 0 ? false : cpuLimit,
+                            timeLimit: timeLimit === 0 ? false : timeLimit,
+                            memoryLimit: memoryLimit === 0 ? false : (memoryLimit + "m"),
                         });
                     }
                 });

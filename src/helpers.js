@@ -93,6 +93,7 @@ if(process.env.mysqlDb)
     "`solverID` int(10) unsigned NOT NULL DEFAULT '0'," +
     "`flagS` int(1) unsigned NOT NULL DEFAULT '0'," +
     "`flagF` int(1) unsigned NOT NULL DEFAULT '0'," +
+    "`timeLimit` int(1) unsigned NOT NULL DEFAULT '0'," +
     "`cpuLimit` int(1) unsigned NOT NULL DEFAULT '3'," +
     "`memoryLimit` int(11) unsigned NOT NULL DEFAULT '500'," +
     "`jobID` int(10) unsigned NOT NULL DEFAULT '0'," +

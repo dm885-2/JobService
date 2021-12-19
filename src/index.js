@@ -49,7 +49,7 @@ export async function queueCheck(msg, publish){
         const job = queue[0];
 
         const userInfo = await publishAndWait("getUser", "getUser-response", 0, {
-            userID: job.userID,
+            id: job.userID,
         }, -1);
         if(userInfo)
         {

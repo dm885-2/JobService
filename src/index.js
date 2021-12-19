@@ -11,19 +11,31 @@ const manager = new SolverManager();
 }
 */
 export async function addJob(msg, publish){
-    const stmt = await query("INSERT INTO `jobs` (`userID`, `dataID`, `modelID`, `solverID`, `cpuLimit`, `memoryLimit`, `flagS`, `flagF`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
+    const stmt = await query("INSERT INTO `jobs` (`userID`, `dataID`, `modelID`) VALUES (?, ?, ?)", [
         msg.userID,
         msg.dataID,
-        msg.modelID,
-        msg.solverID,
-        msg.cpuLimit,
-        msg.memoryLimit,
-        msg.flagS,
-        msg.flagF,
+        msg.modelID
     ]);
 
+    const jobID = stmt?.insertId;
+    if(jobID)
+    {
+        for(let i = 0; i < msg.solvers.length; i++)
+        {
+            const solver = msg.solvers[i];
+            await query("INSERT INTO `jobParts` (`solverID`, `cpuLimit`, `memoryLimit`, `flagS`, `flagF`, `jobID`) VALUES (?, ?, ?, ?, ?, ?)", [
+                solver.solverID,
+                solver.cpuLimit,
+                solver.memoryLimit,
+                solver.flagS,
+                solver.flagF,
+                jobID,
+            ]);
+        }
+    }
+
     publish("add-job-response", {
-        error: !!stmt,
+        error: !jobID,
     });
     publish("queue-check", {});
 }

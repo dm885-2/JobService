@@ -153,7 +153,7 @@ export async function solverHealth(msg, publish){
     solver.healthUpdate();
     if(msg.respond)
     {
-        rapid.publish(host, "solver-ping", {
+        publish(host, "solver-ping", {
             solverID: msg.solverID, 
         });
     }

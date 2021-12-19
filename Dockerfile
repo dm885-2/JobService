@@ -1,4 +1,4 @@
-FROM node:16
+FROM node:16.3-alpine3.12
 
 # Create app directory
 WORKDIR /usr/src/app
@@ -14,5 +14,5 @@ RUN npm ci --only=production
 # Bundle app source
 COPY . .
 
-EXPOSE 8080
+# EXPOSE 8080
 CMD ["npm", "run", "start"]

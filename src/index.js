@@ -40,7 +40,7 @@ export async function queueCheck(msg, publish){
     const queue = await query("SELECT * " +
     // "(SELECT `solverLimit` FROM `users` WHERE users.id = jobs.userID LIMIT 1) as `solverLimit` " + 
     // "(SELECT `data` FROM `files` WHERE files.id = jobs.modelID LIMIT 1) as `modelContent`, " + 
-    // "(SELECT `data` FROM `files` WHERE files.id = jobs.dataID LIMIT 1) as `dataContent` " + 
+    // "(SELECT `data` FROM `files` WHERE files.id = jobs.dataID LIMIT 1) as `dataContent` " +  
     "FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
     console.log("Queue check", queue);
     
@@ -48,9 +48,10 @@ export async function queueCheck(msg, publish){
     {
         const job = queue[0];
 
-        const userInfo = await publishAndWait("getUser", "getUser-response", 0, {
+        const {data: userInfo} = await publishAndWait("getUser", "getUser-response", 0, {
             id: job.userID,
         }, -1);
+        console.log(userInfo);
         if(userInfo)
         {
             const jobSolvers = await query("SELECT * FROM `jobFiles` WHERE `jobID` = ? ORDER BY `id` DESC", [
@@ -58,7 +59,7 @@ export async function queueCheck(msg, publish){
             ]);
             const neededResources = Math.min(Number(userInfo.solverLimit), (jobSolvers || []).length);
             const solvers = manager.getIdleSolvers(neededResources); 
-            // console.log(solvers, jobSolvers, job);
+            console.log(solvers, jobSolvers, job);
             if(solvers && neededResources > 0)
             {
                 await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [

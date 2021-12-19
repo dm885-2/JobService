@@ -22,11 +22,11 @@ export async function addJob(msg, publish){
         for(let i = 0; i < msg.solvers.length; i++)
         {
             const solver = msg.solvers[i];
-            console.log(await query("INSERT INTO `jobFiles` (`modelID`, `dataID`, `jobID`) VALUES (?, ?, ?)", [
+            await query("INSERT INTO `jobFiles` (`modelID`, `dataID`, `jobID`) VALUES (?, ?, ?)", [
                 msg.model,
                 msg.dataset,
                 jobID,
-            ]));
+            ]);
         }
     }
 
@@ -53,7 +53,7 @@ export async function queueCheck(msg, publish){
         ]);
         const neededResources = Math.min(Number(job.solverLimit), (jobSolvers || []).length);
         const solvers = manager.getIdleSolvers(neededResources); 
-        console.log(solvers, jobSolvers, job);
+        // console.log(solvers, jobSolvers, job);
         if(solvers && neededResources > 0)
         {
             await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [

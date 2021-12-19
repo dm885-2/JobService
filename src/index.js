@@ -62,10 +62,10 @@ export async function queueCheck(msg, publish){
             console.log(solvers, jobSolvers, job, neededResources, userInfo);
             if(solvers && neededResources > 0)
             {
-                // await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
-                //     Date.now(),
-                //     job.id,
-                // ]);
+                await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
+                    Date.now(),
+                    job.id,
+                ]);
                 console.log("Send jobs to theese solvers", solvers);
                 solvers.forEach(async (solver, i) => {
                     const target = jobSolvers[i];
@@ -151,6 +151,12 @@ export async function solverHealth(msg, publish){
     }
     
     solver.healthUpdate();
+    if(msg.respond)
+    {
+        rapid.publish(host, "solver-ping", {
+            solverID: msg.solverID, 
+        });
+    }
 }
 
 if(process.env.RAPID)

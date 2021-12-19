@@ -53,7 +53,8 @@ export async function queueCheck(msg, publish){
         const solvers = manager.getIdleSolvers(neededResources); 
         if(solvers && neededResources > 0)
         {
-            await query("UPDATE `jobs` SET `status` = '1' WHERE `id` = ?", [
+            await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
+                Date.now(),
                 job.id,
             ]);
             console.log("Send jobs to theese solvers", solvers);
@@ -86,7 +87,8 @@ export async function queueCheck(msg, publish){
             });
         }else if(neededResources === 0)
         {
-            await query("UPDATE `jobs` SET `status` = '2' WHERE `id` = ?", [
+            await query("UPDATE `jobs` SET `status` = '2', `endTime` = ? WHERE `id` = ?", [
+                Date.now(),
                 job.id,
             ]);
         }
@@ -100,10 +102,16 @@ export async function jobFinished(msg, publish){
         solver.busy = false;
     }
 
+    await query("INSERT INTO `jobOutput` (`content`, `jobID`) VALUES (?, ?)", [
+        JSON.stringify(data), // TODO: Dont just stringify it
+        msg.problemID
+    ]);
+
     const solvers = getBusySolvers(msg.problemID);
     if(solvers.length === 0)
     {
-        await query("UPDATE `jobs` SET `status` = '2' WHERE `id` = ?", [
+        await query("UPDATE `jobs` SET `status` = '2', `endTime` = ? WHERE `id` = ?", [
+            Date.now(),
             job.id,
         ]);
         publish("queue-check", {});

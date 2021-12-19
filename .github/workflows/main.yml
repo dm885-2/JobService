@@ -10,7 +10,7 @@ on:
     branches: [ main ]
 
 env:
-  CICD_TOGGLE: false                              # Change this to true when you are ready to use the pipeline
+  CICD_TOGGLE: true                              # Change this to true when you are ready to use the pipeline
   PROJECT_ID: ${{secrets.GKE_PROJECT}}
   GKE_CLUSTER: buildcluster
   GKE_ZONE: europe-north1

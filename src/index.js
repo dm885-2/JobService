@@ -37,8 +37,8 @@ export async function addJob(msg, publish){
 }
 
 export async function queueCheck(msg, publish){
-    const queue = await query("SELECT *, " +
-    "(SELECT `solverLimit` FROM `users` WHERE users.id = jobs.userID LIMIT 1) as `solverLimit` " + 
+    const queue = await query("SELECT * " +
+    // "(SELECT `solverLimit` FROM `users` WHERE users.id = jobs.userID LIMIT 1) as `solverLimit` " + 
     // "(SELECT `data` FROM `files` WHERE files.id = jobs.modelID LIMIT 1) as `modelContent`, " + 
     // "(SELECT `data` FROM `files` WHERE files.id = jobs.dataID LIMIT 1) as `dataContent` " + 
     "FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
@@ -48,54 +48,60 @@ export async function queueCheck(msg, publish){
     {
         const job = queue[0];
 
-        const jobSolvers = await query("SELECT * FROM `jobFiles` WHERE `jobID` = ? ORDER BY `id` DESC", [
-            job.id,
-        ]);
-        const neededResources = Math.min(Number(job.solverLimit), (jobSolvers || []).length);
-        const solvers = manager.getIdleSolvers(neededResources); 
-        // console.log(solvers, jobSolvers, job);
-        if(solvers && neededResources > 0)
+        const userInfo = await publishAndWait("getUser", "getUser-response", 0, {
+            userID: job.userID,
+        }, -1);
+        if(userInfo)
         {
-            await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
-                Date.now(),
+            const jobSolvers = await query("SELECT * FROM `jobFiles` WHERE `jobID` = ? ORDER BY `id` DESC", [
                 job.id,
             ]);
-            console.log("Send jobs to theese solvers", solvers);
-            solvers.forEach(async (solver, i) => {
-                const target = jobSolvers[i];
-                const [dataContent, modelContent] = await Promise.all([
-                    publishAndWait("read-file", "read-file-response", 0, {
-                        fileId: target.dataID,
-                    }, -1),
-                    publishAndWait("read-file", "read-file-response", 0, {
-                        fileId: target.modelID,
-                    }, -1),
+            const neededResources = Math.min(Number(userInfo.solverLimit), (jobSolvers || []).length);
+            const solvers = manager.getIdleSolvers(neededResources); 
+            // console.log(solvers, jobSolvers, job);
+            if(solvers && neededResources > 0)
+            {
+                await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
+                    Date.now(),
+                    job.id,
                 ]);
-                console.log(dataContent, modelContent);
-                if(!dataContent.error && !modelContent.error)
-                {
-                    console.log("Seinding sovle event!");
-                    solver.busy = true;
-                    solver.jobID = job.id;
-
-                    publish("solve", {
-                        solverID: solver.id,
-                        problemID: job.id,
-                        data: dataContent.data,
-                        model: modelContent.data,
-                        solver: false,
-                        flagS: false,
-                        flagF: false,
-                    });
-                }
-            });
-        }else if(neededResources === 0)
-        {
-            await query("UPDATE `jobs` SET `status` = '2', `endTime` = ? WHERE `id` = ?", [
-                Date.now(),
-                job.id,
-            ]);
-            publish("queue-check", {}); // Go to next element in queue
+                console.log("Send jobs to theese solvers", solvers);
+                solvers.forEach(async (solver, i) => {
+                    const target = jobSolvers[i];
+                    const [dataContent, modelContent] = await Promise.all([
+                        publishAndWait("read-file", "read-file-response", 0, {
+                            fileId: target.dataID,
+                        }, -1),
+                        publishAndWait("read-file", "read-file-response", 0, {
+                            fileId: target.modelID,
+                        }, -1),
+                    ]);
+                    console.log(dataContent, modelContent);
+                    if(!dataContent.error && !modelContent.error)
+                    {
+                        console.log("Seinding sovle event!");
+                        solver.busy = true;
+                        solver.jobID = job.id;
+    
+                        publish("solve", {
+                            solverID: solver.id,
+                            problemID: job.id,
+                            data: dataContent.data,
+                            model: modelContent.data,
+                            solver: false,
+                            flagS: false,
+                            flagF: false,
+                        });
+                    }
+                });
+            }else if(neededResources === 0)
+            {
+                await query("UPDATE `jobs` SET `status` = '2', `endTime` = ? WHERE `id` = ?", [
+                    Date.now(),
+                    job.id,
+                ]);
+                publish("queue-check", {}); // Go to next element in queue
+            }
         }
     }
 }
@@ -139,7 +145,7 @@ export async function solverHealth(msg, publish){
         solver = manager.newSolver(msg.solverID, msg.problemID);
         console.log("Discovered new solver #", msg.solverID, solver);
     }else{
-        console.log("Solver alive", msg.solverID);
+        console.log("Solver alive", msg.solverID, solver);
         solver.busy = msg.problemID !== -1;
     }
     

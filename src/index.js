@@ -5,40 +5,31 @@ const manager = new SolverManager();
 /*
 {
     userID: number,
-    solvers: [{
-        modelID: number,
-        dataID: number,
-        // solver: "",
-    }]
+    modelID: number,
+    dataID: number,
+    
 }
 */
 export async function addJob(msg, publish){
-    const stmt = await query("INSERT INTO `jobs` (`userID`) VALUES (?)", [
+    const stmt = await query("INSERT INTO `jobs` (`userID`, `dataID`, `modelID`, `solverID`, `cpuLimit`, `memoryLimit`, `flagS`, `flagF`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
         msg.userID,
+        msg.dataID,
+        msg.modelID,
+        msg.solverID,
+        msg.cpuLimit,
+        msg.memoryLimit,
+        msg.flagS,
+        msg.flagF,
     ]);
-    const jobID = stmt?.insertId;
-    if(jobID)
-    {
-        for(let i = 0; i < msg.solvers.length; i++)
-        {
-            const solver = msg.solvers[i];
-            await query("INSERT INTO `jobFiles` (`modelID`, `dataID`, `jobID`) VALUES (?, ?, ?)", [
-                msg.model,
-                msg.dataset,
-                jobID,
-            ]);
-        }
-    }
 
     publish("add-job-response", {
-        error: !jobID,
+        error: !!stmt,
     });
     publish("queue-check", {});
 }
 
 export async function queueCheck(_, publish){
-    const queue = await query("SELECT * " +
-    "FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
+    const queue = await query("SELECT * FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
     console.log("Queue check", queue.length, "in queue");
     
     if(queue && queue.length > 0)
@@ -50,27 +41,24 @@ export async function queueCheck(_, publish){
         }, -1);
         if(userInfo)
         {
-            const jobSolvers = await query("SELECT * FROM `jobFiles` WHERE `jobID` = ? ORDER BY `id` DESC", [
-                job.id,
-            ]);
             const neededResources = Math.min(Number(userInfo.solverLimit), (jobSolvers || []).length);
             const solvers = manager.getIdleSolvers(neededResources); 
             if(solvers && neededResources > 0)
             {
-                await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
-                    Date.now(),
-                    job.id,
+                const [dataContent, modelContent, allSolvers] = await Promise.all([
+                    publishAndWait("read-file", "read-file-response", 0, {
+                        fileId: job.dataID,
+                    }, -1),
+                    publishAndWait("read-file", "read-file-response", 0, {
+                        fileId: job.modelID,
+                    }, -1),
+                    publishAndWait("list-solvers", "list-solvers-response", 0, {}, -1),
                 ]);
+
+                const targetSolver = allSolvers.find(s => s.id === job.solverID);
+                
                 solvers.forEach(async (solver, i) => {
-                    const target = jobSolvers[i];
-                    const [dataContent, modelContent] = await Promise.all([
-                        publishAndWait("read-file", "read-file-response", 0, {
-                            fileId: target.dataID,
-                        }, -1),
-                        publishAndWait("read-file", "read-file-response", 0, {
-                            fileId: target.modelID,
-                        }, -1),
-                    ]);
+                    // const target = jobSolvers[i];
                     if(!dataContent.error && !modelContent.error)
                     {
                         solver.busy = true;
@@ -81,12 +69,22 @@ export async function queueCheck(_, publish){
                             problemID: job.id,
                             data: dataContent.data,
                             model: modelContent.data,
-                            solver: false,
-                            flagS: false,
-                            flagF: false,
+                            solver: targetSolver.name,
+                            dockerImage: targetSolver.docker_image,
+
+                            flagS: Number(job.flagS),
+                            flagF: Number(job.flagF),
+
+                            cpuLimit: job.cpuLimit,
+                            memoryLimit: job.memoryLimit + "m",
                         });
                     }
                 });
+                
+                await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
+                    Date.now(),
+                    job.id,
+                ]);
             }else if(neededResources === 0)
             {
                 await query("UPDATE `jobs` SET `status` = '2', `endTime` = ? WHERE `id` = ?", [

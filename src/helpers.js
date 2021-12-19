@@ -4,13 +4,13 @@ import mysql from "mysql";
 
 import rapidManager from "./rapid/RapidManager.js";
 
-const RapidManager = new rapidManager();
-
 const SECRET = process.env.SECRET ?? `3(?<,t2mZxj$5JT47naQFTXwqNWP#W>'*Kr!X!(_M3N.u8v}%N/JYGHC.Zwq.!v-`;  // JWT secret
 const rabbitUser = process.env.rabbitUser ?? "guest";
 const rabbitPass = process.env.rabbitPass ?? "guest";
 export const host = "amqp://" + rabbitUser + ":" + rabbitPass + "@" + (process.env.rabbitHost ?? `localhost`);  // RabbitMQ url
 
+
+const RapidManager = new rapidManager(host);
 
 export function publishAndWait(event, responseEvent, sessionID, data, userID)
 {

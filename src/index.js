@@ -71,9 +71,10 @@ export async function queueCheck(msg, publish){
                         fileId: target.modelID,
                     }, -1),
                 ]);
-                
+                console.log(dataContent, modelContent);
                 if(!dataContent.error && !modelContent.error)
                 {
+                    console.log("Seinding sovle event!");
                     solver.busy = true;
                     solver.jobID = job.id;
 
@@ -105,18 +106,18 @@ export async function jobFinished(msg, publish){
     {
         solver.busy = false;
     }
-
+    console.log("Got something", msg);
     await query("INSERT INTO `jobOutput` (`content`, `jobID`) VALUES (?, ?)", [
-        JSON.stringify(data), // TODO: Dont just stringify it
+        JSON.stringify(msg.data), // TODO: Dont just stringify it
         msg.problemID
     ]);
 
-    const solvers = getBusySolvers(msg.problemID);
+    const solvers = manager.getBusySolvers(msg.problemID);
     if(solvers.length === 0)
     {
         await query("UPDATE `jobs` SET `status` = '2', `endTime` = ? WHERE `id` = ?", [
             Date.now(),
-            job.id,
+            msg.problemID,
         ]);
         publish("queue-check", {});
     }

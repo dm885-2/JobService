@@ -26,7 +26,7 @@ export default class RapidManager {
 
   async publishAndSubscribe(event, callbackEvent, sessionId, data, callback, userId) {
     if (!(callbackEvent in this.#subscriptions)) {
-      this.#subscriptions[callbackEvent] = new RiverSubscription(this.#host, 'gateway', callbackEvent);
+      this.#subscriptions[callbackEvent] = new RiverSubscription(this.#host, 'jobservice', callbackEvent);
     }
     const subscription = this.#subscriptions[callbackEvent];
 
@@ -40,5 +40,6 @@ export default class RapidManager {
     data.requestId = requestId;
 
     rapid.publish(this.#host, event, data);
+    // setTimeout(() => rapid.publish(this.#host, event, data), 20);
   }
 }

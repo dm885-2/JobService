@@ -73,10 +73,12 @@ export async function queueCheck(_, publish){
                 console.log("Got CRUD responses");
                 const {solvers: allSolvers} = await Promise.any([ // Double poke
                     publishAndWait("list-solvers", "list-solvers-response", -1, {}, -1),
-                    publishAndWait("list-solvers", "list-solvers-response", -2, {}, -1),
+                    // publishAndWait("list-solvers", "list-solvers-response", -2, {}, -1),
                 ]);
                 
                 console.log("Got solver list");
+
+                // return;
                 await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
                     Date.now(),
                     job.id,
@@ -151,6 +153,7 @@ export async function jobFinished(msg, publish){
 }
 
 export async function jobHistory(msg, publish){
+    console.log("Job history!!");
     const data = await query("SELECT * FROM `jobs` WHERE `userID` = ? ORDER BY `id` DESC LIMIT 50", [
         msg.userID // Should be token userID?
     ]);

@@ -31,7 +31,7 @@ export default class RapidManager {
     const subscription = this.#subscriptions[callbackEvent];
 
     // Generate a random request ID to differentiate incoming answers and add it to the data body.
-    const requestId = await uid(18);
+    const requestId = -1;
 
     subscription.addCallback(sessionId, requestId, this.#log(callback, userId));
 

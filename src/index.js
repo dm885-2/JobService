@@ -54,6 +54,9 @@ export async function queueCheck(_, publish){
         }, -1);
         if(userInfo)
         {
+            const jobSolvers = await query("SELECT * FROM `jobParts` WHERE `jobID` = ? ORDER BY `id` DESC", [
+                job.id,
+            ]);
             const neededResources = Math.min(Number(userInfo.solverLimit), (jobSolvers || []).length);
             const solvers = manager.getIdleSolvers(neededResources); 
             if(solvers && neededResources > 0)
@@ -67,19 +70,19 @@ export async function queueCheck(_, publish){
                     }, -1),
                     publishAndWait("list-solvers", "list-solvers-response", 0, {}, -1),
                 ]);
-
-                const targetSolver = allSolvers.find(s => s.id === job.solverID);
                 
                 solvers.forEach(async (solver, i) => {
-                    // const target = jobSolvers[i];
+                    const target = jobSolvers[i];
+                    const targetSolver = allSolvers.find(s => s.id === target.solverID);
+
                     if(!dataContent.error && !modelContent.error)
                     {
                         solver.busy = true;
                         solver.jobID = job.id;
     
-                        const memoryLimit = Number(job.memoryLimit);
-                        const timeLimit = Number(job.timeLimit);
-                        const cpuLimit = Number(job.cpuLimit);
+                        const memoryLimit = Number(target.memoryLimit);
+                        const timeLimit = Number(target.timeLimit);
+                        const cpuLimit = Number(target.cpuLimit);
 
                         publish("solve", {
                             solverID: solver.id,
@@ -89,8 +92,8 @@ export async function queueCheck(_, publish){
                             solver: targetSolver.name,
                             dockerImage: targetSolver.docker_image,
 
-                            flagS: Number(job.flagS),
-                            flagF: Number(job.flagF),
+                            flagS: Number(target.flagS),
+                            flagF: Number(target.flagF),
 
                             cpuLimit: cpuLimit === 0 ? false : cpuLimit,
                             timeLimit: timeLimit === 0 ? false : timeLimit,

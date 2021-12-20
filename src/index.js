@@ -59,6 +59,7 @@ export async function queueCheck(_, publish){
             ]);
             const neededResources = Math.min(Number(userInfo.solverLimit), (jobSolvers || []).length);
             const solvers = manager.getIdleSolvers(neededResources); 
+            console.log("Starting solvers", neededResources);
             if(solvers && neededResources > 0)
             {
                 const [dataContent, modelContent] = await Promise.all([
@@ -69,17 +70,20 @@ export async function queueCheck(_, publish){
                         fileId: job.modelID,
                     }, -1),
                 ]);
+                console.log("Got CRUD responses");
                 const {solvers: allSolvers} = await Promise.any([ // Double poke
                     publishAndWait("list-solvers", "list-solvers-response", -1, {}, -1),
                     publishAndWait("list-solvers", "list-solvers-response", -2, {}, -1),
                 ]);
                 
+                console.log("Got solver list");
                 await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
                     Date.now(),
                     job.id,
                 ]);
 
                 solvers.forEach(async (solver, i) => {
+                    console.log("Sending to solver");
                     const target = jobSolvers[i];
                     const targetSolver = allSolvers.find(s => s.id === target.solverID);
 

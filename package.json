@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/DM885/Microservice-template#readme",
   "dependencies": {
-    "@ovcina/rapidriver": "^2.0.7",
+    "@ovcina/rapidriver": "^2.0.8",
     "cross-env": "^7.0.3",
     "jsonwebtoken": "^8.5.1",
     "mysql": "^2.18.1",

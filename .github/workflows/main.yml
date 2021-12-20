@@ -93,6 +93,7 @@ jobs:
       run: |
         cat ./deployment.yaml | sed "s/${{secrets.DOCKERHUB_USERNAME}}\/${{env.DEPLOYMENT_NAME}}/${{secrets.DOCKERHUB_USERNAME}}\/${{env.DEPLOYMENT_NAME}}-testing/g" | kubectl -n ${{ env.NAMESPACE }} apply -f -
     - name: Wait for service rollout
+      timeout-minutes: 3
       run: |
         ./test_services.sh
         ./.github/k3s-wait.sh

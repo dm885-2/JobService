@@ -16,7 +16,7 @@ export async function addJob(msg, publish){
         msg.dataID,
         msg.modelID
     ]);
-
+    
     const jobID = stmt?.insertId;
     if(jobID)
     {
@@ -28,7 +28,7 @@ export async function addJob(msg, publish){
                 solver.cpuLimit,
                 solver.timeLimit,
                 solver.memoryLimit,
-                solver.flagS,
+                solver.flagA,
                 solver.flagF,
                 jobID,
             ]);
@@ -70,7 +70,7 @@ export async function queueCheck(_, publish){
                     }, -1),
                     publishAndWait("list-solvers", "list-solvers-response", 0, {}, -1),
                 ]);
-                
+
                 solvers.forEach(async (solver, i) => {
                     const target = jobSolvers[i];
                     const targetSolver = allSolvers.find(s => s.id === target.solverID);
@@ -122,8 +122,9 @@ export async function jobFinished(msg, publish){
     let solver = manager.getSolver(msg.solverID);
     if(solver)
     {
-        solver.busy = false;
+        solver.busy = msg.busy;
     }
+
     await query("INSERT INTO `jobOutput` (`content`, `jobID`) VALUES (?, ?)", [
         JSON.stringify(msg.data), // TODO: Dont just stringify it
         msg.problemID
@@ -153,6 +154,7 @@ export async function jobOutput(msg, publish){
     const data = await query("SELECT * FROM `jobOutput` WHERE `jobID` = ?", [
         msg.id,
     ]);
+
     publish("job-output-response", {
         data: data && data.length > 0 ? data[0] : false,
     });

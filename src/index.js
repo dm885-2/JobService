@@ -153,7 +153,7 @@ export async function jobFinished(msg, publish){
 }
 
 export async function jobHistory(msg, publish){
-    console.log("Job history!!");
+    // console.log("Job history!!");
     const data = await query("SELECT * FROM `jobs` WHERE `userID` = ? ORDER BY `id` DESC LIMIT 50", [
         msg.userID // Should be token userID?
     ]);

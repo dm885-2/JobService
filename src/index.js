@@ -23,7 +23,7 @@ export async function addJob(msg, publish){
         for(let i = 0; i < msg.solvers.length; i++)
         {
             const solver = msg.solvers[i];
-            await query("INSERT INTO `jobParts` (`solverID`, `cpuLimit`, `timeLimit`, `memoryLimit`, `flagS`, `flagF`, `jobID`) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+            const stmtz = await query("INSERT INTO `jobParts` (`solverID`, `cpuLimit`, `timeLimit`, `memoryLimit`, `flagS`, `flagF`, `jobID`) VALUES (?, ?, ?, ?, ?, ?, ?)", [
                 solver.solverID,
                 solver.cpuLimit,
                 solver.timeLimit,
@@ -32,6 +32,7 @@ export async function addJob(msg, publish){
                 solver.flagF,
                 jobID,
             ]);
+            console.log(stmtz);
         }
     }
 
@@ -48,7 +49,6 @@ export async function queueCheck(_, publish){
     if(queue && queue.length > 0)
     {
         const job = queue[0];
-
         const {data: userInfo} = await publishAndWait("getUser", "getUser-response", -1, {
             id: job.userID,
         }, -1);
@@ -61,20 +61,23 @@ export async function queueCheck(_, publish){
             const solvers = manager.getIdleSolvers(neededResources); 
             if(solvers && neededResources > 0)
             {
-                const [dataContent, modelContent, allSolvers] = await Promise.all([
+                const [dataContent, modelContent] = await Promise.all([
                     publishAndWait("read-file", "read-file-response", -1, {
                         fileId: job.dataID,
                     }, -1),
-                    publishAndWait("read-file", "read-file-response", -1, {
+                    publishAndWait("read-file", "read-file-response", -2, {
                         fileId: job.modelID,
                     }, -1),
+                ]);
+                const {solvers: allSolvers} = await Promise.any([ // Double poke
                     publishAndWait("list-solvers", "list-solvers-response", -1, {}, -1),
+                    publishAndWait("list-solvers", "list-solvers-response", -2, {}, -1),
                 ]);
                 
-                console.log("SET STATUS", await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
+                await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
                     Date.now(),
                     job.id,
-                ]));
+                ]);
 
                 solvers.forEach(async (solver, i) => {
                     const target = jobSolvers[i];
@@ -108,6 +111,7 @@ export async function queueCheck(_, publish){
                 });
             }else if(neededResources === 0)
             {
+                console.log("No recourseds!");
                 await query("UPDATE `jobs` SET `status` = '2', `endTime` = ? WHERE `id` = ?", [
                     Date.now(),
                     job.id,
@@ -125,6 +129,7 @@ export async function jobFinished(msg, publish){
         solver.busy = msg.busy;
     }
 
+    console.log("GOT OUTPUT", msg);
     await query("INSERT INTO `jobOutput` (`content`, `jobID`) VALUES (?, ?)", [
         JSON.stringify(msg.data), // TODO: Dont just stringify it
         msg.problemID
@@ -154,7 +159,7 @@ export async function jobOutput(msg, publish){
     const data = await query("SELECT * FROM `jobOutput` WHERE `jobID` = ?", [
         msg.id,
     ]);
-
+    console.log("Output", data);
     publish("job-output-response", {
         data: data && data.length > 0 ? data[0] : false,
     });

@@ -70,6 +70,11 @@ export async function queueCheck(_, publish){
                     }, -1),
                     publishAndWait("list-solvers", "list-solvers-response", 0, {}, -1),
                 ]);
+                
+                console.log("SET STATUS", await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
+                    Date.now(),
+                    job.id,
+                ]));
 
                 solvers.forEach(async (solver, i) => {
                     const target = jobSolvers[i];
@@ -101,11 +106,6 @@ export async function queueCheck(_, publish){
                         });
                     }
                 });
-                
-                await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
-                    Date.now(),
-                    job.id,
-                ]);
             }else if(neededResources === 0)
             {
                 await query("UPDATE `jobs` SET `status` = '2', `endTime` = ? WHERE `id` = ?", [

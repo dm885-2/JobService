@@ -49,7 +49,7 @@ export async function queueCheck(_, publish){
     {
         const job = queue[0];
 
-        const {data: userInfo} = await publishAndWait("getUser", "getUser-response", 0, {
+        const {data: userInfo} = await publishAndWait("getUser", "getUser-response", -1, {
             id: job.userID,
         }, -1);
         if(userInfo)
@@ -62,13 +62,13 @@ export async function queueCheck(_, publish){
             if(solvers && neededResources > 0)
             {
                 const [dataContent, modelContent, allSolvers] = await Promise.all([
-                    publishAndWait("read-file", "read-file-response", 0, {
+                    publishAndWait("read-file", "read-file-response", -1, {
                         fileId: job.dataID,
                     }, -1),
-                    publishAndWait("read-file", "read-file-response", 0, {
+                    publishAndWait("read-file", "read-file-response", -1, {
                         fileId: job.modelID,
                     }, -1),
-                    publishAndWait("list-solvers", "list-solvers-response", 0, {}, -1),
+                    publishAndWait("list-solvers", "list-solvers-response", -1, {}, -1),
                 ]);
                 
                 console.log("SET STATUS", await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [

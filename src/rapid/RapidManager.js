@@ -19,7 +19,7 @@ export default class RapidManager {
   {
     return data => {
       data.userId = userId;
-      rapid.publish(this.#host, "logIt", data);
+      // rapid.publish(this.#host, "logIt", data);
       callback(data);
     };
   }

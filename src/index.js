@@ -149,6 +149,15 @@ export async function jobHistory(msg, publish){
     });
 }
 
+export async function jobContent(msg, publish){
+    const data = await query("SELECT * FROM `jobOutput` WHERE `jobID` = ?", [
+        msg.id,
+    ]);
+    publish("job-content-response", {
+        data: data && data.length > 0 ? data[0] : false,
+    });
+}
+
 export async function solverHealth(msg, publish){
     let solver = manager.getSolver(msg.solverID);
     if(!solver)
@@ -175,6 +184,7 @@ if(process.env.RAPID)
         {river: "jobs", event: "add-job", work: addJob}, // Adds a new job
         {river: "jobs", event: "queue-check", work: queueCheck}, // Runs the next job in the queue, if there is any
         {river: "jobs", event: "job-history", work: jobHistory}, // Gets the job history of a user
+        {river: "jobs", event: "job-content", work: jobContent}, // Gets the job history of a user
         {river: "jobs", event: "solver-response", work: jobFinished}, // A solver has answered
         
         // Solver manager stuff

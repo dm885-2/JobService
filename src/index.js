@@ -123,7 +123,7 @@ export async function queueCheck(_, publish){
                         const memoryLimit = Number(target.memoryLimit);
                         const timeLimit = Number(target.timeLimit);
                         const cpuLimit = Number(target.cpuLimit);
-
+                        console.log("sent to ", solver.id);
                         publish("solve", {
                             solverID: solver.id,
                             problemID: job.id,
@@ -211,6 +211,7 @@ export async function solverHealth(msg, publish){
         solver.busy = msg.problemID !== -1;
     }
     
+    console.log("Now has", manager.solvers, "solvers", msg);
     solver.healthUpdate();
     if(msg.respond)
     {

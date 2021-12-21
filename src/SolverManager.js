@@ -65,11 +65,17 @@ export default class SolverManager {
         setInterval(() => this.healthCheck(), 1000 * 60 * 5); // Runs health check every 5 minute.
     }
 
+    get solvers()
+    {
+        return this.#solvers.length;
+    }
+
     /**
      * Discovers all solver-services already running.
      */
     discover()
     {
+        console.log("Discovering..");
         rapid.publish(host, "solver-ping", {});
     }
 

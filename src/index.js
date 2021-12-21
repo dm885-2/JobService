@@ -43,6 +43,7 @@ export async function addJob(msg, publish){
 }
 
 export async function removeJob(msg, publish){
+    await query("DELETE FROM `jobOutput` WHERE `jobID` = ?", [msg.id]);
     await query("DELETE FROM `jobParts` WHERE `jobID` = ?", [msg.id]);
     await query("DELETE FROM `jobs` WHERE `id` = ?", [msg.id]);
 

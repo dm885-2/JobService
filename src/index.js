@@ -43,16 +43,28 @@ export async function addJob(msg, publish){
 }
 
 export async function removeJob(msg, publish){
-    await query("DELETE FROM `jobOutput` WHERE `jobID` = ?", [msg.id]);
-    await query("DELETE FROM `jobParts` WHERE `jobID` = ?", [msg.id]);
-    await query("DELETE FROM `jobs` WHERE `id` = ?", [msg.id]);
+    let check = !msg.userID;
+    if(!check) // Has userID, verify its this user's job
+    {
+        const checkStmt = await query("SELECT `id` FROM `jobs` WHERE `userID` = ?", [
+            msg.userID
+        ]);
+        check = checkStmt && checkStmt.length > 0;
+    }
 
-    publish("stopSolve", { // Stop other solvers working on this problem
-        problemID: msg.id
-    });
+    if(check)
+    {
+        await query("DELETE FROM `jobOutput` WHERE `jobID` = ?", [msg.id]);
+        await query("DELETE FROM `jobParts` WHERE `jobID` = ?", [msg.id]);
+        await query("DELETE FROM `jobs` WHERE `id` = ?", [msg.id]);
+        
+        publish("stopSolve", { // Stop other solvers working on this problem
+            problemID: msg.id
+        });
+    }
 
     publish("remove-job-response", {
-        error: false,
+        error: check,
     });
 }
 
@@ -170,7 +182,6 @@ export async function jobFinished(msg, publish){
 }
 
 export async function jobHistory(msg, publish){
-    // console.log("Job history!!");
     const data = await query("SELECT * FROM `jobs` WHERE `userID` = ? ORDER BY `id` DESC LIMIT 50", [
         msg.userID // Should be token userID?
     ]);

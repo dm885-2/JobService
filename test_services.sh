@@ -16,10 +16,10 @@ kubectl -n rabbits apply -f https://raw.githubusercontent.com/DM885/SolverInfoSe
 kubectl -n rabbits apply -f https://raw.githubusercontent.com/DM885/AuthenticationService/main/deployment.yaml
 
 # LOGGING SERVICE
-kubectl -n rabbits apply -f https://raw.githubusercontent.com/DM885/LoggingService/main/deployment.yaml
+# kubectl -n rabbits apply -f https://raw.githubusercontent.com/DM885/LoggingService/main/deployment.yaml
 
 # JOB SERVICE
 # kubectl -n rabbits apply -f https://raw.githubusercontent.com/DM885/JobService/main/deployment.yaml
 
 # MINIZINC SERVICE
-kubectl -n rabbits apply -f https://raw.githubusercontent.com/DM885/MiniZincService/main/deployment.yaml
+# kubectl -n rabbits apply -f https://raw.githubusercontent.com/DM885/MiniZincService/main/deployment.yaml

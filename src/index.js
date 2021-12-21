@@ -139,7 +139,7 @@ export async function queueCheck(_, publish){
                 publish("queue-check", {}); // Go to next element in queue
             }
         }
-
+        publish("logIt", {});
     }
 }
 

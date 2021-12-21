@@ -29,15 +29,10 @@ let logStore = {};
          river: subscriber.river,
          event: subscriber.event,
          work: (msg, publish) => {
+             let logPath = msg.logPath ?? [];
              const wrappedPublish = (event, data) => {
-                const ID = msg?.requestId ?? -1;
-                console.log("Log store", ID, logStore, msg);
-                if(logStore[ID])
-                {
-                    logStore[ID] = msg.logPath ?? [];
-                }
 
-                logStore[ID].push({
+                logPath.push({
                     river: subscriber.river, 
                     event: subscriber.event
                 });
@@ -46,15 +41,11 @@ let logStore = {};
                     ...data,
                     sessionId: msg.sessionId,
                     requestId: msg.requestId,
-                    logPath: logStore[ID],
+                    logPath: logPath,
                 });
              };
 
-             const clearStore = () => {
-                 delete logStore[msg.requestId];
-             };
-
-             subscriber.work(msg, wrappedPublish, clearStore);
+             subscriber.work(msg, wrappedPublish);
          },
      })));
 }

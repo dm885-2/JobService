@@ -22,13 +22,31 @@
 //
 //
 // -- This will overwrite an existing command --
-Cypress.Commands.add('loginAsUser', () => {
+Cypress.Commands.add("register", (name, pass) => {
+  cy.request({
+    method:'POST', 
+    url:'/auth/register',
+    body: {
+      username: name,
+      password: pass
+    }
+  })
+  .as('registerResponse')
+  .then((response) => {
+    Cypress.env('rtoken', response.body.refreshToken); 
+    return response;
+  })
+  .its('status')
+  .should('eq', 200);
+})
+
+Cypress.Commands.add('login', (name, pass) => {
     cy.request({
         method:'POST', 
         url:'/auth/login',
         body: {
-          username: "user",
-          password: "user_supersecure"
+          username: name,
+          password: pass
         }
       })
       .as('loginResponse')
@@ -74,4 +92,78 @@ Cypress.Commands.add('getAT', () => {
     })
     .its('status')
     .should('eq', 200);
+})
+
+Cypress.Commands.add("getAllJobs", () => {
+  cy.request({
+    method:'GET', 
+    url:'/jobs',
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + Cypress.env("token")
+    },
+  })
+  .as('getAllJobResponse')
+  .then((response) => {
+    Cypress.env("allJobs", response.body);
+    return response;
+  })
+  .its('status')
+  .should('eq', 200);
+})
+
+Cypress.Commands.add("deleteAllJobs", () => {
+  cy.request({
+    method:'GET', 
+    url:'/jobs',
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + Cypress.env("token")
+    },
+  })
+  .then((response) => {
+    response.body.data.forEach(job=> {
+      cy.request({
+        method:'DELETE', 
+        url:'/jobs/'+job.id,
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + Cypress.env("token")
+        },
+      })
+      .its('status')
+      .should('eq', 200);
+    })
+    return response;
+  })
+  .its('status')
+  .should('eq', 200);
+})
+
+Cypress.Commands.add("addJob", () => {
+  cy.request({
+    method:'POST', 
+    url:'/jobs',
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + Cypress.env("token")
+    },
+    body: {
+      "model": 9,
+      "dataset": 10,
+      "solvers": [{
+          "flagA": false,
+          "flagF": false,
+          "cpuLimit": 1,
+          "memoryLimit": 0,
+          "timeLimit": 0,
+          "solverID": 0
+      }]
+  }
+  })
+  .then((response) => {
+    return response;
+  })
+  .its('status')
+  .should('eq', 200);
 })

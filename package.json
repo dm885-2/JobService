@@ -5,7 +5,7 @@
   "main": "./src/index.js",
   "type": "module",
   "scripts": {
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules TESTING=1 npx jest",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules TESTING=1 npx jest --forceExit",
     "start": "cross-env RAPID=1 node src/index.js",
     "debug": "cross-env RAPID=1 nodemon src/index.js",
     "debugDocker": "cross-env RAPID=1 mysqlHost=localhost mysqlPass=password mysqlDb=dm885 mysqlUser=root nodemon src/index.js",

@@ -1,43 +1,87 @@
+describe('JOBSERVICE tests', () => {
 
+    beforeEach(()=> {
+        var user = "u" + Date.now();
+        var pass = "p" + Date.now();
+        cy.register(user, pass);
+        cy.login(user, pass);
+        cy.getAT();
+    })
 
-/** 	Sample taken from CRUD test 		**/
-describe('CAN PASS', () => {
-    expect(true).to.be.true;
+    it("should return empty list of jobs", ()=> {
+        cy.request({
+            method:'GET', 
+            url:'/jobs',
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + Cypress.env("token")
+            },
+          })
+          .as('loginResponse')
+          .then((response) => {
+            expect(response.body.data.length).to.eq(0);
+          })
+          .its('status')
+          .should('eq', 200);
+    });
 
+    it("should successfully add job into the tables", ()=> {
+        cy.request({
+            method:'POST', 
+            url:'/jobs',
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + Cypress.env("token")
+            },
+            body: {
+                "model": 9,
+                "dataset": 10,
+                "solvers": [{
+                    "flagA": false,
+                    "flagF": false,
+                    "cpuLimit": 1,
+                    "memoryLimit": 0,
+                    "timeLimit": 0,
+                    "solverID": 0
+                }]
+            }
+          })
+          .then((response) => {
+            expect(response.body.error).to.eq(false);
+            cy.request({
+                method:'GET', 
+                url:'/jobs',
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + Cypress.env("token")
+                }
+              })
+              .then((res) => {
+                expect(res.body.data.length).to.eq(1);
+                expect(res.body.error).to.eq(false);
+              })
+          })
+          .its('status')
+          .should('eq', 200);
+    });
+
+    it("should delete all jobs", () => {
+        cy.getAllJobs();
+        cy.deleteAllJobs();
+
+        cy.request({
+            method:'GET', 
+            url:'/jobs',
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + Cypress.env("token")
+            }
+          })
+          .then((response) => {
+            expect(response.body.data.length).to.eq(0);
+            expect(response.body.error).to.eq(false);
+          })
+          .its('status')
+          .should('eq', 200);
+    })
 });
-// describe('READ Test', () => {
-//     //add a files before each test
-//     beforeEach(()=> {
-//         Cypress.Cookies.defaults({
-//             preserve: "sessionId"
-//           })
-
-//         cy.request("POST", "/files", {
-//             "filename": "testFile.mzn",
-//             "filetype": "mzn",
-//             "data": "This is the file content!"
-//         }).then((res) => {
-//             return;
-//         });
-//     })
-    
-//     //Delete all files after each test
-//    afterEach(()=>{
-//         cy.request('GET', "/files/all/mzn").then(res => {
-//             res.body.results.forEach(file => {
-//                 cy.request('DELETE', "/files/"+file.fileId);
-//             })
-//             return;
-//         });
-//    })
-
-//    it("READ TEST", () => {
-//         cy.request('GET', "/files/all/mzn").then(file => {
-//             cy.request("GET", "/files/"+file.body.results[0].fileId).then((res) => {
-//                 expect(res).to.have.property("status", 200);
-//                 expect(res.body).to.have.property("error", false);
-//                 return;
-//             });
-//         });
-//     });
-// });

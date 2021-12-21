@@ -1,6 +1,6 @@
-import {host, query, subscriber, publishAndWait} from "./helpers.js";
+import helpers from "./helpers.js";
 import SolverManager from "./SolverManager.js";
-const manager = new SolverManager();
+export const manager = new SolverManager();
 
 /*
 {
@@ -11,7 +11,7 @@ const manager = new SolverManager();
 }
 */
 export async function addJob(msg, publish){
-    const stmt = await query("INSERT INTO `jobs` (`userID`, `dataID`, `modelID`) VALUES (?, ?, ?)", [
+    const stmt = await helpers.query("INSERT INTO `jobs` (`userID`, `dataID`, `modelID`) VALUES (?, ?, ?)", [
         msg.userID,
         msg.dataID,
         msg.modelID
@@ -23,7 +23,7 @@ export async function addJob(msg, publish){
         for(let i = 0; i < msg.solvers.length; i++)
         {
             const solver = msg.solvers[i];
-            await query("INSERT INTO `jobParts` (`solverID`, `cpuLimit`, `timeLimit`, `memoryLimit`, `flagS`, `flagF`, `jobID`) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+            await helpers.query("INSERT INTO `jobParts` (`solverID`, `cpuLimit`, `timeLimit`, `memoryLimit`, `flagS`, `flagF`, `jobID`) VALUES (?, ?, ?, ?, ?, ?, ?)", [
                 solver.solverID,
                 solver.cpuLimit,
                 solver.timeLimit,
@@ -45,7 +45,7 @@ export async function removeJob(msg, publish){
     let check = !msg.userID;
     if(!check) // Has userID, verify its this user's job
     {
-        const checkStmt = await query("SELECT `id` FROM `jobs` WHERE `userID` = ?", [
+        const checkStmt = await helpers.query("SELECT `id` FROM `jobs` WHERE `userID` = ?", [
             msg.userID
         ]);
         check = checkStmt && checkStmt.length > 0;
@@ -53,9 +53,9 @@ export async function removeJob(msg, publish){
 
     if(check)
     {
-        await query("DELETE FROM `jobOutput` WHERE `jobID` = ?", [msg.id]);
-        await query("DELETE FROM `jobParts` WHERE `jobID` = ?", [msg.id]);
-        await query("DELETE FROM `jobs` WHERE `id` = ?", [msg.id]);
+        await helpers.query("DELETE FROM `jobOutput` WHERE `jobID` = ?", [msg.id]);
+        await helpers.query("DELETE FROM `jobParts` WHERE `jobID` = ?", [msg.id]);
+        await helpers.query("DELETE FROM `jobs` WHERE `id` = ?", [msg.id]);
         
         publish("stopSolve", { // Stop other solvers working on this problem
             problemID: msg.id
@@ -68,18 +68,18 @@ export async function removeJob(msg, publish){
 }
 
 export async function queueCheck(_, publish){
-    const queue = await query("SELECT * FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
+    const queue = await helpers.query("SELECT * FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
     console.log("Queue check", queue.length, "in queue");
     
     if(queue && queue.length > 0)
     {
         const job = queue[0];
-        const {data: userInfo} = await publishAndWait("getUser", "getUser-response", -1, {
+        const {data: userInfo} = await helpers.publishAndWait("getUser", "getUser-response", -1, {
             id: job.userID,
         }, -1);
         if(userInfo)
         {
-            const jobSolvers = await query("SELECT * FROM `jobParts` WHERE `jobID` = ? ORDER BY `id` DESC", [
+            const jobSolvers = await helpers.query("SELECT * FROM `jobParts` WHERE `jobID` = ? ORDER BY `id` DESC", [
                 job.id,
             ]);
             const neededResources = Math.min(Number(userInfo.solverLimit), (jobSolvers || []).length);
@@ -88,22 +88,22 @@ export async function queueCheck(_, publish){
             if(solvers && neededResources > 0)
             {
                 const [dataContent, modelContent] = await Promise.all([
-                    publishAndWait("read-file", "read-file-response", -1, {
+                    helpers.publishAndWait("read-file", "read-file-response", -1, {
                         fileId: job.dataID,
                     }, -1),
-                    publishAndWait("read-file", "read-file-response", -2, {
+                    helpers.publishAndWait("read-file", "read-file-response", -2, {
                         fileId: job.modelID,
                     }, -1),
                 ]);
 
                 const {solvers: allSolvers} = await Promise.any([ // Double poke
-                    publishAndWait("list-solvers", "list-solvers-response", -1, {}, -1),
-                    // publishAndWait("list-solvers", "list-solvers-response", -2, {}, -1),
+                    helpers.publishAndWait("list-solvers", "list-solvers-response", -1, {}, -1),
+                    // helpers.publishAndWait("list-solvers", "list-solvers-response", -2, {}, -1),
                 ]);
                 
 
                 // return;
-                await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
+                await helpers.query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
                     Date.now(),
                     job.id,
                 ]);
@@ -141,7 +141,7 @@ export async function queueCheck(_, publish){
             }else if(neededResources === 0)
             {
                 console.log("No neededResources!");
-                await query("UPDATE `jobs` SET `status` = '2', `endTime` = ? WHERE `id` = ?", [
+                await helpers.query("UPDATE `jobs` SET `status` = '2', `endTime` = ? WHERE `id` = ?", [
                     Date.now(),
                     job.id,
                 ]);
@@ -160,7 +160,7 @@ export async function jobFinished(msg, publish){
         solver.busy = msg.busy;
     }
 
-    await query("INSERT INTO `jobOutput` (`content`, `jobID`) VALUES (?, ?)", [
+    await helpers.query("INSERT INTO `jobOutput` (`content`, `jobID`) VALUES (?, ?)", [
         JSON.stringify(msg.data),
         msg.problemID
     ]);
@@ -168,7 +168,7 @@ export async function jobFinished(msg, publish){
     const solvers = manager.getBusySolvers(msg.problemID);
     if(solvers.length === 0)
     {
-        await query("UPDATE `jobs` SET `status` = '2', `endTime` = ? WHERE `id` = ?", [
+        await helpers.query("UPDATE `jobs` SET `status` = '2', `endTime` = ? WHERE `id` = ?", [
             Date.now(),
             msg.problemID,
         ]);
@@ -178,7 +178,7 @@ export async function jobFinished(msg, publish){
 }
 
 export async function jobHistory(msg, publish){
-    const data = await query("SELECT * FROM `jobs` WHERE `userID` = ? ORDER BY `id` DESC LIMIT 50", [
+    const data = await helpers.query("SELECT * FROM `jobs` WHERE `userID` = ? ORDER BY `id` DESC LIMIT 50", [
         msg.userID // Should be token userID?
     ]);
     publish("job-history-response", {
@@ -187,7 +187,7 @@ export async function jobHistory(msg, publish){
 }
 
 export async function jobOutput(msg, publish){
-    const data = await query("SELECT * FROM `jobOutput` WHERE `jobID` = ?", [
+    const data = await helpers.query("SELECT * FROM `jobOutput` WHERE `jobID` = ?", [
         msg.id,
     ]);
 
@@ -208,10 +208,10 @@ export async function solverHealth(msg, publish){
     }
     
     console.log("Now has", manager.solvers, "solvers", msg);
-    solver.healthUpdate();
+    solver?.healthUpdate();
     if(msg.respond)
     {
-        publish(host, "solver-ping", {
+        publish(helpers.host, "solver-ping", {
             solverID: msg.solverID, 
         });
 
@@ -220,7 +220,7 @@ export async function solverHealth(msg, publish){
 
 if(process.env.RAPID)
 {
-    subscriber(host, [
+    helpers.subscriber(helpers.host, [
         {river: "jobs", event: "add-job", work: addJob}, // Adds a new job
         {river: "jobs", event: "remove-job", work: removeJob}, // Removes a new job
         {river: "jobs", event: "queue-check", work: queueCheck}, // Runs the next job in the queue, if there is any

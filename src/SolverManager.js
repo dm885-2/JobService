@@ -1,6 +1,6 @@
 import rapid from "@ovcina/rapidriver";
 
-import {host} from "./helpers.js";
+import helpers from "./helpers.js";
 
 class Solver {
     id = -1;
@@ -44,7 +44,7 @@ class Solver {
         if(this.#healthy)
         {
             this.#healthy = false;
-            rapid.publish(host, "solver-ping", {
+            rapid.publish(helpers.host, "solver-ping", {
                 solverID: this.id, 
             });
         }else if((Date.now() - this.#lastMessage) >= (1000 * 60 * 60)) // Hasent responded to health checks for atleast an hour
@@ -76,7 +76,7 @@ export default class SolverManager {
     discover()
     {
         console.log("Discovering..");
-        rapid.publish(host, "solver-ping", {});
+        rapid.publish(helpers.host, "solver-ping", {});
     }
 
     /**
@@ -84,7 +84,7 @@ export default class SolverManager {
      */
     queueCheck()
     {
-        rapid.publish(host, "queue-check", {});
+        rapid.publish(helpers.host, "queue-check", {});
     }
 
     /**
@@ -136,7 +136,7 @@ export default class SolverManager {
                 this.removeSolver(solver.id);
                 if(solver.jobID !== -1)
                 {
-                    rapid.publish(host, "solver-response", {
+                    rapid.publish(helpers.host, "solver-response", {
                         solverID: solver.id,
                         problemID: solver.jobID,
                     });

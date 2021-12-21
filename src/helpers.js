@@ -31,7 +31,7 @@ let logStore = {};
          work: (msg, publish) => {
              const wrappedPublish = (event, data) => {
                 const ID = msg?.requestId ?? -1;
-                
+                console.log("Log store", ID, logStore, msg);
                 if(logStore[ID])
                 {
                     logStore[ID] = msg.logPath ?? [];

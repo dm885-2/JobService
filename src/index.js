@@ -23,7 +23,7 @@ export async function addJob(msg, publish){
         for(let i = 0; i < msg.solvers.length; i++)
         {
             const solver = msg.solvers[i];
-            const stmtz = await query("INSERT INTO `jobParts` (`solverID`, `cpuLimit`, `timeLimit`, `memoryLimit`, `flagS`, `flagF`, `jobID`) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+            await query("INSERT INTO `jobParts` (`solverID`, `cpuLimit`, `timeLimit`, `memoryLimit`, `flagS`, `flagF`, `jobID`) VALUES (?, ?, ?, ?, ?, ?, ?)", [
                 solver.solverID,
                 solver.cpuLimit,
                 solver.timeLimit,
@@ -32,7 +32,6 @@ export async function addJob(msg, publish){
                 solver.flagF,
                 jobID,
             ]);
-            console.log(stmtz);
         }
     }
 
@@ -96,13 +95,12 @@ export async function queueCheck(_, publish){
                         fileId: job.modelID,
                     }, -1),
                 ]);
-                console.log("Got CRUD responses");
+
                 const {solvers: allSolvers} = await Promise.any([ // Double poke
                     publishAndWait("list-solvers", "list-solvers-response", -1, {}, -1),
                     // publishAndWait("list-solvers", "list-solvers-response", -2, {}, -1),
                 ]);
                 
-                console.log("Got solver list");
 
                 // return;
                 await query("UPDATE `jobs` SET `status` = '1', `startTime` = ? WHERE `id` = ?", [
@@ -111,7 +109,6 @@ export async function queueCheck(_, publish){
                 ]);
 
                 solvers.forEach(async (solver, i) => {
-                    console.log("Sending to solver");
                     const target = jobSolvers[i];
                     const targetSolver = allSolvers.find(s => s.id === target.solverID);
 
@@ -123,7 +120,7 @@ export async function queueCheck(_, publish){
                         const memoryLimit = Number(target.memoryLimit);
                         const timeLimit = Number(target.timeLimit);
                         const cpuLimit = Number(target.cpuLimit);
-                        console.log("sent to ", solver.id);
+
                         publish("solve", {
                             solverID: solver.id,
                             problemID: job.id,
@@ -143,7 +140,7 @@ export async function queueCheck(_, publish){
                 });
             }else if(neededResources === 0)
             {
-                console.log("No recourseds!");
+                console.log("No neededResources!");
                 await query("UPDATE `jobs` SET `status` = '2', `endTime` = ? WHERE `id` = ?", [
                     Date.now(),
                     job.id,
@@ -163,9 +160,8 @@ export async function jobFinished(msg, publish){
         solver.busy = msg.busy;
     }
 
-    // console.log("GOT OUTPUT", msg);
     await query("INSERT INTO `jobOutput` (`content`, `jobID`) VALUES (?, ?)", [
-        JSON.stringify(msg.data), // TODO: Dont just stringify it
+        JSON.stringify(msg.data),
         msg.problemID
     ]);
 
@@ -194,7 +190,7 @@ export async function jobOutput(msg, publish){
     const data = await query("SELECT * FROM `jobOutput` WHERE `jobID` = ?", [
         msg.id,
     ]);
-    console.log("Output", data);
+
     publish("job-output-response", {
         data: data && data.length > 0 ? data[0] : false,
     });

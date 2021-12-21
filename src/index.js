@@ -10,7 +10,7 @@ const manager = new SolverManager();
     
 }
 */
-export async function addJob(msg, publish){
+export async function addJob(msg, publish, clearStore){
     const stmt = await query("INSERT INTO `jobs` (`userID`, `dataID`, `modelID`) VALUES (?, ?, ?)", [
         msg.userID,
         msg.dataID,
@@ -40,9 +40,10 @@ export async function addJob(msg, publish){
         error: !jobID,
     });
     publish("queue-check", {});
+    clearStore();
 }
 
-export async function removeJob(msg, publish){
+export async function removeJob(msg, publish, clearStore){
     await query("DELETE FROM `jobOutput` WHERE `jobID` = ?", [msg.id]);
     await query("DELETE FROM `jobParts` WHERE `jobID` = ?", [msg.id]);
     await query("DELETE FROM `jobs` WHERE `id` = ?", [msg.id]);
@@ -54,9 +55,10 @@ export async function removeJob(msg, publish){
     publish("remove-job-response", {
         error: false,
     });
+    clearStore();
 }
 
-export async function queueCheck(_, publish){
+export async function queueCheck(_, publish, clearStore){
     const queue = await query("SELECT * FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
     console.log("Queue check", queue.length, "in queue");
     
@@ -139,10 +141,11 @@ export async function queueCheck(_, publish){
                 publish("queue-check", {}); // Go to next element in queue
             }
         }
+        clearStore();
     }
 }
 
-export async function jobFinished(msg, publish){
+export async function jobFinished(msg, publish, clearStore){
     let solver = manager.getSolver(msg.solverID);
     if(solver)
     {
@@ -163,10 +166,11 @@ export async function jobFinished(msg, publish){
             msg.problemID,
         ]);
         publish("queue-check", {});
+        clearStore();
     }
 }
 
-export async function jobHistory(msg, publish){
+export async function jobHistory(msg, publish, clearStore){
     // console.log("Job history!!");
     const data = await query("SELECT * FROM `jobs` WHERE `userID` = ? ORDER BY `id` DESC LIMIT 50", [
         msg.userID // Should be token userID?
@@ -174,9 +178,10 @@ export async function jobHistory(msg, publish){
     publish("job-history-response", {
         data: data || [],
     });
+    clearStore();
 }
 
-export async function jobOutput(msg, publish){
+export async function jobOutput(msg, publish, clearStore){
     const data = await query("SELECT * FROM `jobOutput` WHERE `jobID` = ?", [
         msg.id,
     ]);
@@ -184,9 +189,10 @@ export async function jobOutput(msg, publish){
     publish("job-output-response", {
         data: data && data.length > 0 ? data[0] : false,
     });
+    clearStore();
 }
 
-export async function solverHealth(msg, publish){
+export async function solverHealth(msg, publish, clearStore){
     let solver = manager.getSolver(msg.solverID);
     if(!solver)
     {
@@ -203,6 +209,7 @@ export async function solverHealth(msg, publish){
         publish(host, "solver-ping", {
             solverID: msg.solverID, 
         });
+        clearStore();
     }
 }
 

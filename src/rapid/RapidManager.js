@@ -1,6 +1,5 @@
 import rapid from '@ovcina/rapidriver';
 import RiverSubscription from './RiverSubscription.js';
-import uid from 'uid-safe';
 
 export default class RapidManager {
 

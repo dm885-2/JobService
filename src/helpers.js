@@ -22,6 +22,7 @@ export function publishAndWait(event, responseEvent, sessionID, data, userID)
  * @param stromg host 
  * @param [] subscribers 
  */
+let logStore = {};
  export function subscriber(host, subscribers)
  {
      rapid.subscribe(host, subscribers.map(subscriber => ({
@@ -29,8 +30,14 @@ export function publishAndWait(event, responseEvent, sessionID, data, userID)
          event: subscriber.event,
          work: (msg, publish) => {
              const wrappedPublish = (event, data) => {
-                let logPath = msg.logPath ?? [];
-                logPath.push({
+                const ID = msg?.requestId ?? -1;
+                
+                if(logStore[ID])
+                {
+                    logStore[ID] = msg.logPath ?? [];
+                }
+
+                logStore[ID].push({
                     river: subscriber.river, 
                     event: subscriber.event
                 });
@@ -39,10 +46,15 @@ export function publishAndWait(event, responseEvent, sessionID, data, userID)
                     ...data,
                     sessionId: msg.sessionId,
                     requestId: msg.requestId,
-                    logPath
+                    logPath: logStore[ID],
                 });
              };
-             subscriber.work(msg, wrappedPublish);
+
+             const clearStore = () => {
+                 delete logStore[msg.requestId];
+             };
+
+             subscriber.work(msg, wrappedPublish, clearStore);
          },
      })));
 }

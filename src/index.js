@@ -150,7 +150,7 @@ export async function jobFinished(msg, publish){
         solver.busy = msg.busy;
     }
 
-    console.log("GOT OUTPUT", msg);
+    // console.log("GOT OUTPUT", msg);
     await query("INSERT INTO `jobOutput` (`content`, `jobID`) VALUES (?, ?)", [
         JSON.stringify(msg.data), // TODO: Dont just stringify it
         msg.problemID

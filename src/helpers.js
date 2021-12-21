@@ -31,7 +31,6 @@ let logStore = {};
          work: (msg, publish) => {
              let logPath = msg.logPath ?? [];
              const wrappedPublish = (event, data) => {
-
                 logPath.push({
                     river: subscriber.river, 
                     event: subscriber.event

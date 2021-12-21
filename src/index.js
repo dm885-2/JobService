@@ -164,8 +164,8 @@ export async function jobFinished(msg, publish){
             msg.problemID,
         ]);
         publish("queue-check", {});
-
     }
+    publish("logIt", {});
 }
 
 export async function jobHistory(msg, publish){

@@ -35,7 +35,7 @@ let logStore = {};
                     river: subscriber.river, 
                     event: subscriber.event
                 });
-                console.log("Log path", logPath);
+                console.log("Log path", logPath, new Error());
 
                 publish(event, {
                     ...data,

@@ -42,6 +42,19 @@ export async function addJob(msg, publish){
     publish("queue-check", {});
 }
 
+export async function removeJob(msg, publish){
+    await query("DELETE FROM `jobParts` WHERE `jobID` = ?", [msg.id]);
+    await query("DELETE FROM `jobs` WHERE `id` = ?", [msg.id]);
+
+    publish("stopSolve", { // Stop other solvers working on this problem
+        problemID: msg.id
+    });
+
+    publish("remove-job-response", {
+        error: false,
+    });
+}
+
 export async function queueCheck(_, publish){
     const queue = await query("SELECT * FROM `jobs` WHERE `status` = '0' ORDER BY `id` ASC LIMIT 1");
     console.log("Queue check", queue.length, "in queue");
@@ -196,6 +209,7 @@ if(process.env.RAPID)
 {
     subscriber(host, [
         {river: "jobs", event: "add-job", work: addJob}, // Adds a new job
+        {river: "jobs", event: "remove-job", work: removeJob}, // Removes a new job
         {river: "jobs", event: "queue-check", work: queueCheck}, // Runs the next job in the queue, if there is any
         {river: "jobs", event: "job-history", work: jobHistory}, // Gets the job history of a user
         {river: "jobs", event: "job-output", work: jobOutput}, // Gets the output of a job

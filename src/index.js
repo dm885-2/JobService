@@ -139,8 +139,8 @@ export async function queueCheck(_, publish){
                 publish("queue-check", {}); // Go to next element in queue
             }
         }
-        console.log("Sending logIt")
-        publish("logIt", {});
+
+        publish("logIt", {userId: -1});
     }
 }
 
@@ -166,7 +166,7 @@ export async function jobFinished(msg, publish){
         ]);
         publish("queue-check", {});
     }
-    publish("logIt", {});
+    publish("logIt", {userId: -1});
 }
 
 export async function jobHistory(msg, publish){

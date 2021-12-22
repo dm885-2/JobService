@@ -84,7 +84,7 @@ jobs:
         chmod +x .github/k3s-setup.sh
         chmod +x .github/k3s-wait.sh
         chmod +x ./test_services.sh
-        ./.github/k3s-setup.sh
+        ./.github/k3s-setup.sh ${{secrets.AT}}
       shell: bash
     - name: Wait for rollout
       run: |

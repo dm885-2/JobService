@@ -12,7 +12,7 @@ on:
 env:
   CICD_TOGGLE: true                              # Change this to true when you are ready to use the pipeline
   PROJECT_ID: ${{secrets.GKE_PROJECT}}
-  GKE_CLUSTER: buildcluster
+  GKE_CLUSTER: cluster-1
   GKE_ZONE: europe-north1-a
   NAMESPACE: rabbits                                              # Maybe change this, probably not though.
   DEPLOYMENT_NAME: jobservice                                           # Change this to match the name in the deployment.yaml

@@ -10,12 +10,13 @@ on:
     branches: [ main ]
 
 env:
-  CICD_TOGGLE: false                              # Change this to true when you are ready to use the pipeline
+  CICD_TOGGLE: true                              # Change this to true when you are ready to use the pipeline
   PROJECT_ID: ${{secrets.GKE_PROJECT}}
   GKE_CLUSTER: buildcluster
-  GKE_ZONE: europe-north1-a
+  GKE_ZONE: europe-north1
   NAMESPACE: rabbits                                              # Maybe change this, probably not though.
-  DEPLOYMENT_NAME: template                                       # Change this to match the name in the deployment.yaml
+  DEPLOYMENT_NAME: jobservice                                           # Change this to match the name in the deployment.yaml
+
 
 jobs:
   build:
@@ -92,6 +93,7 @@ jobs:
       run: |
         cat ./deployment.yaml | sed "s/${{secrets.DOCKERHUB_USERNAME}}\/${{env.DEPLOYMENT_NAME}}/${{secrets.DOCKERHUB_USERNAME}}\/${{env.DEPLOYMENT_NAME}}-testing/g" | kubectl -n ${{ env.NAMESPACE }} apply -f -
     - name: Wait for service rollout
+      timeout-minutes: 3
       run: |
         ./test_services.sh
         ./.github/k3s-wait.sh
